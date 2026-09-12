@@ -114,6 +114,11 @@ const SobekAI = (() => {
     try {
       const state = await load();
       root.innerHTML = chrome(page) + banner(state) + document.getElementById("page-template").innerHTML;
+      const video = document.querySelector(".bg-video");
+      if (video && typeof video.play === "function") {
+        video.playbackRate = 1 / 3;
+        video.play().catch(() => {});
+      }
       hydrate(page, state);
     } catch (error) {
       root.innerHTML = `<header class="nav"><a class="brand" href="/"><img class="logo" src="/assets/sobek-logo.png" alt="SobekAI"></a></header><div class="page"><div class="empty">Model unavailable. ${error.message}</div></div>`;
