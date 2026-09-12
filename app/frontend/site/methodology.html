@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SobekAI · Data & Methodology</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/sobek.css">
+</head>
+<body>
+  <div id="app">Loading SobekAI…</div>
+  <template id="page-template">
+    <main class="page">
+      <h1>How the flood signal is built</h1>
+      <section class="panel" id="sources"></section>
+      <section class="panel" style="margin-top:14px" id="model"></section>
+      <section class="panel" style="margin-top:14px">
+        <h2>Pipeline</h2>
+        <div class="flow">
+          <span>Data</span>→<span>Preprocessing</span>→<span>Segmentation</span>→<span>Features</span>→<span>SobekAI risk engine</span>→<span>Spatial map</span>→<span>Validation</span>
+        </div>
+        <p>SobekAI can estimate location-specific risk from the features it has. It cannot guarantee a flood, replace civil protection, or update a map without a new observation.</p>
+      </section>
+    </main>
+  </template>
+  <script src="/assets/sobek.js"></script>
+  <script>SobekAI.boot("methodology");</script>
+</body>
+</html>

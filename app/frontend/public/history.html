@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SobekAI · History</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/sobek.css">
+</head>
+<body>
+  <div id="app">Loading SobekAI…</div>
+  <template id="page-template">
+    <main class="page">
+      <h1>Historical flood record</h1>
+      <p>Only the configured historical event is listed. Severity is not scored.</p>
+      <section class="grid cards" id="events"></section>
+      <section class="panel" style="margin-top:14px">
+        <h2>Prediction vs actual</h2>
+        <div class="split">
+          <div class="empty">SobekAI prediction overlay is available on the Risk Map as DEMO DATA.</div>
+          <div class="empty">Actual historical flood extent: official vectors not ingested.</div>
+        </div>
+        <p id="metrics"></p>
+      </section>
+      <section class="panel" style="margin-top:14px">
+        <h2>Analytics</h2>
+        <p>Risk vs time, rainfall vs time, flooded area vs time, and model performance will consume API series. No chart values are hardcoded here.</p>
+        <div id="timeline" class="timeline"></div>
+      </section>
+    </main>
+  </template>
+  <script src="/assets/sobek.js"></script>
+  <script>SobekAI.boot("history");</script>
+</body>
+</html>

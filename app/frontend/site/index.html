@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SobekAI · Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="/assets/sobek.css">
+</head>
+<body>
+  <div id="app">Loading SobekAI…</div>
+  <template id="page-template">
+    <main class="page">
+      <h1>Flood command</h1>
+      <p data-text="header.selected_region"></p>
+      <section class="grid kpis" id="kpis"></section>
+      <section class="grid two" style="margin-top:14px">
+        <aside class="panel" id="layers"></aside>
+        <div class="map-wrap"><div id="map"></div>
+          <div class="legend">
+            <span><i class="swatch" style="background:var(--low)"></i>Low</span>
+            <span><i class="swatch" style="background:var(--moderate)"></i>Moderate</span>
+            <span><i class="swatch" style="background:var(--high)"></i>High</span>
+            <span><i class="swatch" style="background:var(--critical)"></i>Critical</span>
+          </div>
+        </div>
+        <aside class="panel" id="inspect"></aside>
+      </section>
+      <section class="panel" style="margin-top:14px">
+        <h2>Risk distribution</h2>
+        <div id="distribution"></div>
+      </section>
+    </main>
+  </template>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/assets/sobek.js"></script>
+  <script>SobekAI.boot("dashboard");</script>
+</body>
+</html>

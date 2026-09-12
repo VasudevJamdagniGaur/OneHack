@@ -1,12 +1,7 @@
-# Frontend placeholder
+# SobekAI frontend
 
-Planned centerpiece: an interactive Folium or Leaflet heatmap.
+Multi-page shells served by `app/backend/server.py`.
 
-Required demo controls:
+Routes: `/`, `/risk-map`, `/history`, `/alerts`, `/learn`, `/methodology`.
 
-- region and historical event labels
-- prediction date
-- low / moderate / high / critical legend
-- toggle: predicted risk vs official flood extent vs overlap
-
-Phase 1 ships static PNGs from `scripts/run_sample_pipeline.py` instead.
+Demo numbers come from `/api/app` and are labeled DEMO DATA or AWAITING MODEL DATA. Disabled map layers are not faked.

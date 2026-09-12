@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Satellite Flood Early Warning</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    :root {
+      --ink: #f6f3ec;
+      --muted: #b7c0c8;
+      --line: rgba(246, 243, 236, 0.12);
+      --panel: rgba(14, 18, 22, 0.86);
+      --low: #3f9d74;
+      --moderate: #e0b23a;
+      --high: #ef7a32;
+      --critical: #e24b45;
+      --flood: #4aa3ff;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: #101418;
+    }
+    #map { position: absolute; inset: 0; }
+    .leaflet-container { background: #1a2228; font-family: inherit; }
+    .top {
+      position: absolute; z-index: 500; top: 16px; left: 16px; right: 16px;
+      display: flex; justify-content: space-between; gap: 16px; pointer-events: none;
+    }
+    .brand, .meta, .panel, .layers, .timeline, .drawer {
+      pointer-events: auto;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+    }
+    .brand, .meta { border-radius: 16px; padding: 14px 16px; }
+    .kicker {
+      font-family: "IBM Plex Sans Condensed", sans-serif;
+      letter-spacing: 0.16em; text-transform: uppercase; font-size: 11px; color: var(--moderate);
+    }
+    h1 { margin: 4px 0 0; font-size: 22px; font-weight: 600; letter-spacing: -0.03em; }
+    .meta { text-align: right; min-width: 280px; }
+    .meta strong { display: block; font-size: 15px; }
+    .pill {
+      display: inline-block; margin-top: 8px; padding: 3px 8px; border-radius: 999px;
+      border: 1px solid rgba(224, 178, 58, 0.45); color: #f0d48a; font-size: 11px;
+    }
+    .panel {
+      position: absolute; z-index: 500; top: 118px; left: 16px; width: 340px;
+      border-radius: 18px; padding: 16px; max-height: calc(100vh - 220px); overflow: auto;
+    }
+    .story { margin: 0 0 14px; color: var(--muted); font-size: 13.5px; line-height: 1.45; }
+    .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+    .kpi { background: rgba(255,255,255,0.04); border-radius: 12px; padding: 10px; }
+    .kpi span { display: block; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .kpi b { display: block; margin-top: 4px; font-size: 22px; letter-spacing: -0.04em; }
+    .bar { display: grid; grid-template-columns: 72px 1fr 36px; gap: 8px; align-items: center; margin: 7px 0; font-size: 12px; }
+    .track { height: 8px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden; }
+    .fill { height: 100%; border-radius: 99px; }
+    .fill.low { background: var(--low); }
+    .fill.moderate { background: var(--moderate); }
+    .fill.high { background: var(--high); }
+    .fill.critical { background: var(--critical); }
+    .pair { display: flex; justify-content: space-between; gap: 8px; margin-top: 12px; font-size: 13px; color: var(--muted); }
+    .pair b { color: var(--ink); }
+    .layers {
+      position: absolute; z-index: 500; top: 118px; right: 16px; width: 230px;
+      border-radius: 16px; padding: 12px;
+    }
+    .layers h2, .panel h2, .drawer h2 {
+      margin: 0 0 10px; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+      font-family: "IBM Plex Sans Condensed", sans-serif; font-weight: 600;
+    }
+    .chip {
+      width: 100%; text-align: left; margin-bottom: 8px; border-radius: 10px;
+      border: 1px solid var(--line); background: transparent; color: var(--ink);
+      padding: 8px 10px; cursor: pointer; font: inherit; font-size: 13px;
+    }
+    .chip.on { border-color: rgba(246, 243, 236, 0.45); background: rgba(255,255,255,0.08); }
+    .legend { display: grid; gap: 6px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+    .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; }
+    .timeline {
+      position: absolute; z-index: 500; left: 16px; right: 16px; bottom: 16px;
+      border-radius: 16px; padding: 12px 14px 14px;
+    }
+    .timeline header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+    .days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+    .day {
+      height: 72px; border-radius: 10px; background: rgba(255,255,255,0.04);
+      display: flex; flex-direction: column; justify-content: flex-end; padding: 8px;
+      position: relative; overflow: hidden;
+    }
+    .day i {
+      position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(#ef7a32, #e24b45);
+      opacity: 0.85;
+    }
+    .day span, .day b { position: relative; z-index: 1; }
+    .day span { font-size: 11px; color: var(--muted); }
+    .day b { font-size: 14px; }
+    .day.pred { outline: 1px solid var(--moderate); }
+    .stamp {
+      position: absolute; z-index: 500; left: 372px; bottom: 132px;
+      font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #f0d48a;
+      background: rgba(20, 14, 6, 0.72); border: 1px solid rgba(224, 178, 58, 0.4);
+      border-radius: 999px; padding: 6px 10px;
+    }
+    .open-drawer {
+      position: absolute; z-index: 500; right: 16px; bottom: 132px;
+      border: 0; border-radius: 999px; padding: 10px 14px; cursor: pointer;
+      background: #f4efe6; color: #15191d; font: inherit; font-weight: 600;
+    }
+    .drawer {
+      position: absolute; z-index: 600; top: 16px; right: 16px; bottom: 16px; width: 380px;
+      border-radius: 18px; padding: 16px; overflow: auto; display: none;
+    }
+    .drawer.open { display: block; }
+    .drawer img { width: 100%; border-radius: 12px; margin-top: 8px; }
+    .note { color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .close { float: right; border: 0; background: transparent; color: var(--ink); cursor: pointer; font-size: 18px; }
+    @media (max-width: 760px) {
+      .panel, .layers, .stamp { position: static; width: auto; max-height: none; margin: 12px; }
+      .top, .timeline { position: static; margin: 12px; }
+      #map { position: relative; height: 62vh; }
+      .open-drawer { position: static; margin: 0 12px 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="top">
+    <div class="brand">
+      <div class="kicker">Historical replay</div>
+      <h1>Satellite flood early warning</h1>
+    </div>
+    <div class="meta">
+      <strong id="region"></strong>
+      <span id="event"></span>
+      <div class="pill" id="mode"></div>
+    </div>
+  </div>
+
+  <aside class="panel">
+    <h2>Before the flood</h2>
+    <p class="story">Satellite rainfall and valley terrain become a risk score for every grid cell. The score rises toward the cells that later flood. This is not a live satellite feed.</p>
+    <div class="kpis">
+      <div class="kpi"><span>Prediction</span><b id="pred-date"></b></div>
+      <div class="kpi"><span>High-risk area</span><b id="area"></b></div>
+      <div class="kpi"><span>Inside flood</span><b id="inside"></b></div>
+      <div class="kpi"><span>Outside flood</span><b id="outside"></b></div>
+    </div>
+    <div id="bars"></div>
+    <div class="pair"><span>Overlap cells</span><b id="overlap"></b></div>
+    <div class="pair"><span>Risk rises before peak</span><b id="rising"></b></div>
+  </aside>
+
+  <aside class="layers">
+    <h2>Map layers</h2>
+    <button class="chip on" id="btn-risk" type="button">Predicted risk</button>
+    <button class="chip" id="btn-flood" type="button">Actual flood extent</button>
+    <div class="legend">
+      <div><i class="swatch" style="background:var(--low)"></i>Low</div>
+      <div><i class="swatch" style="background:var(--moderate)"></i>Moderate</div>
+      <div><i class="swatch" style="background:var(--high)"></i>High</div>
+      <div><i class="swatch" style="background:var(--critical)"></i>Critical</div>
+      <div><i class="swatch" style="background:var(--flood)"></i>Observed flood</div>
+    </div>
+  </aside>
+
+  <div class="stamp">Synthetic sample risk map</div>
+
+  <section class="timeline">
+    <header>
+      <strong>Risk rises before the analog peak</strong>
+      <span id="window" class="note"></span>
+    </header>
+    <div class="days" id="days"></div>
+  </section>
+
+  <button class="open-drawer" id="open-drawer" type="button">Flood detector</button>
+  <aside class="drawer" id="drawer">
+    <button class="close" id="close-drawer" type="button" aria-label="Close">×</button>
+    <h2>Prithvi flood detector</h2>
+    <p class="note" id="detector"></p>
+    <p class="note" id="detector-status"></p>
+    <img src="/prithvi_example.png" alt="Prithvi water mask on the official India example chip">
+    <p class="note">Official Sen1Floods11 example chip. Not the Ahr Valley event, and not an earthquake product. Class shown in blue is detected water.</p>
+  </aside>
+
+  <script id="dash" type="application/json">__DASHBOARD_JSON__</script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const data = JSON.parse(document.getElementById("dash").textContent);
+    const bounds = [[data.bbox.min_lat, data.bbox.min_lon], [data.bbox.max_lat, data.bbox.max_lon]];
+    document.getElementById("region").textContent = data.region;
+    document.getElementById("event").textContent = data.event;
+    document.getElementById("mode").textContent = "Not live · " + data.mode.replaceAll("_", " ");
+    document.getElementById("pred-date").textContent = data.prediction_date;
+    document.getElementById("area").textContent = data.high_risk_km2 + " km²";
+    document.getElementById("inside").textContent = data.inside.toFixed(2);
+    document.getElementById("outside").textContent = data.outside.toFixed(2);
+    document.getElementById("overlap").textContent = data.overlap;
+    document.getElementById("rising").textContent = data.rising ? "Yes" : "No";
+    document.getElementById("window").textContent = "Validation map " + data.validation_date;
+    document.getElementById("detector").textContent = data.detector;
+    document.getElementById("detector-status").textContent = data.detector_status;
+
+    const total = Math.max(...Object.values(data.counts));
+    document.getElementById("bars").innerHTML = ["critical", "high", "moderate", "low"].map((name) => {
+      const count = data.counts[name] || 0;
+      const width = Math.max(6, 100 * count / total);
+      return `<div class="bar"><span>${name}</span><div class="track"><div class="fill ${name}" style="width:${width}%"></div></div><b>${count}</b></div>`;
+    }).join("");
+
+    const peak = Math.max(...data.daily_means);
+    document.getElementById("days").innerHTML = data.daily_means.map((value, index) => {
+      const height = Math.round(100 * value / peak);
+      const cls = index === 5 ? "day pred" : "day";
+      const label = index === 5 ? "13 Jul" : "D" + (index + 1);
+      return `<div class="${cls}"><i style="height:${height}%"></i><span>${label}</span><b>${value.toFixed(2)}</b></div>`;
+    }).join("");
+
+    const map = L.map("map", { zoomControl: false }).fitBounds(bounds, {
+      paddingTopLeft: [370, 130],
+      paddingBottomRight: [270, 140]
+    });
+    L.control.zoom({ position: "bottomright" }).addTo(map);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 17,
+      attribution: "&copy; OpenStreetMap"
+    }).addTo(map);
+    const risk = L.imageOverlay("/risk_overlay.png?v=" + data.cache, bounds, { opacity: 0.9 }).addTo(map);
+    const flood = L.imageOverlay("/flood_overlay.png?v=" + data.cache, bounds, { opacity: 0.85 });
+    L.rectangle(bounds, { color: "#f4efe6", weight: 1, fill: false, dashArray: "4 6" }).addTo(map);
+
+    function toggle(layer, button) {
+      if (map.hasLayer(layer)) {
+        map.removeLayer(layer);
+        button.classList.remove("on");
+      } else {
+        layer.addTo(map);
+        button.classList.add("on");
+      }
+    }
+    document.getElementById("btn-risk").onclick = (event) => toggle(risk, event.currentTarget);
+    document.getElementById("btn-flood").onclick = (event) => toggle(flood, event.currentTarget);
+    document.getElementById("open-drawer").onclick = () => document.getElementById("drawer").classList.add("open");
+    document.getElementById("close-drawer").onclick = () => document.getElementById("drawer").classList.remove("open");
+    setTimeout(() => map.invalidateSize(), 200);
+  </script>
+</body>
+</html>

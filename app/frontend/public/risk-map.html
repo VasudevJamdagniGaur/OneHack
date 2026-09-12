@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SobekAI · Risk Map</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="/assets/sobek.css">
+</head>
+<body>
+  <div id="app">Loading SobekAI…</div>
+  <template id="page-template">
+    <main class="page">
+      <h1>Flood risk surface</h1>
+      <section class="grid two">
+        <aside class="panel" id="layers"></aside>
+        <div class="stage">
+          <div id="map"></div>
+          <div class="compare">
+            <label>Predicted risk <input id="compare-slider" type="range" min="0" max="100" value="15"> Actual flood extent</label>
+            <p>DEMO DATA if overlays are present. The actual layer is a synthetic mask, not the official EMS extent.</p>
+          </div>
+        </div>
+        <aside class="panel" id="inspect"></aside>
+      </section>
+      <section class="panel" style="margin-top:14px">
+        <h2>Temporal timeline</h2>
+        <div class="timeline" id="timeline"></div>
+      </section>
+    </main>
+  </template>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/assets/sobek.js"></script>
+  <script>SobekAI.boot("risk-map");</script>
+</body>
+</html>

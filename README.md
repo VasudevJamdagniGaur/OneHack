@@ -1,6 +1,8 @@
-# Flood-AI — Satellite Flood Early-Warning Prototype
+# SobekAI — Satellite-Powered Flood Intelligence & Early Warning
 
-Hackathon prototype for **AI-1. Satellite-Based Real-Time Natural Disaster Prediction**, scoped to **flood only**.
+Satellite-powered flood early-warning prototype for **AI-1. Satellite-Based Real-Time Natural Disaster Prediction**, scoped to **flood only**.
+
+This is **historical satellite-based flood risk prediction**. It is not a live satellite feed.
 
 This is a **historical replay** of public satellite-derived products. It is not a live satellite feed and not a generic flood/no-flood image classifier.
 
@@ -13,6 +15,21 @@ This is a **historical replay** of public satellite-derived products. It is not 
 > Here is the overlap.
 
 ---
+
+## Product surface
+
+SobekAI pages, served by the existing Python app:
+
+- `/` Dashboard
+- `/risk-map` Risk Map
+- `/history` History
+- `/alerts` Alerts
+- `/learn` Learn
+- `/methodology` Data & Methodology
+
+The Python package remains `flood_ai`. IBM/NASA Prithvi-EO is a third-party segmentation model. The SobekAI contribution is the risk engine, validation path, and product.
+
+Run: `python app/backend/server.py` then open http://127.0.0.1:8080
 
 ## Current milestone (Phase 1)
 

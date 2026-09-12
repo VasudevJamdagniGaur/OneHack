@@ -1,8 +1,14 @@
 # Flood-AI prototype configuration.
 # Historical replay only. This is not a live satellite feed.
 
+product:
+  name: SobekAI
+  subtitle: Satellite-Powered Flood Intelligence & Early Warning
+  version: 0.1.0-demo
+  package: flood_ai
+
 project:
-  name: flood-ai
+  name: sobekai
   hazard: flood
   mode: historical_replay
   data_mode: sample          # sample | real  (real data is not downloaded yet)

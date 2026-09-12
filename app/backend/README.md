@@ -1,11 +1,18 @@
-# Backend placeholder
+# SobekAI backend
 
-Planned: a small FastAPI (or static JSON) service that reads `data/processed` risk grids and returns:
+Python stdlib server. It does not replace the `flood_ai` pipeline.
 
-- region / event metadata
-- prediction date
-- high-risk area km²
-- class counts
-- per-cell `lat, lon, flood_risk`
+On startup it runs the sample pipeline, writes overlays, and serves:
 
-Not implemented in Phase 1. The console dashboard in `flood_ai.pipeline.format_dashboard_text` is the current stand-in.
+- `GET /api/regions`
+- `GET /api/predictions`
+- `GET /api/risk-map`
+- `GET /api/risk-map/inspect`
+- `GET /api/history`
+- `GET /api/history/emsr517_aoi15`
+- `GET /api/alerts`
+- `GET /api/metrics`
+- `GET /api/data-sources`
+- `GET /api/learn`
+
+Metrics stay `evaluation_pending` until an official flood extent is ingested.
