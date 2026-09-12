@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SobekAI · Dashboard</title>
   <link rel="icon" type="image/png" href="/assets/sobek-mark.png">
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="/assets/sobek.css">
 </head>
@@ -18,24 +18,42 @@
   <div id="app" class="boot"><img class="logo" src="/assets/sobek-logo.png" alt="SobekAI"><p>Loading flood intelligence…</p></div>
   <template id="page-template">
     <main class="page">
-      <h1>Flood command</h1>
-      <p data-text="header.selected_region"></p>
-      <section class="grid kpis" id="kpis"></section>
-      <section class="grid two" style="margin-top:14px">
-        <aside class="panel" id="layers"></aside>
-        <div class="map-wrap"><div id="map"></div>
-          <div class="legend">
-            <span><i class="swatch" style="background:var(--low)"></i>Low</span>
-            <span><i class="swatch" style="background:var(--moderate)"></i>Moderate</span>
-            <span><i class="swatch" style="background:var(--high)"></i>High</span>
-            <span><i class="swatch" style="background:var(--critical)"></i>Critical</span>
+      <p class="eyebrow">Satellite-powered flood intelligence</p>
+      <h1>Flood <em>Intelligence</em></h1>
+      <p class="lede">Watch the waters. Understand the risk. Stay ahead of the surge.</p>
+      <section class="kpis" id="kpis"></section>
+      <section class="dash">
+        <section class="panel map-panel">
+          <div class="panel-head">
+            <h2>Flood risk map</h2>
+            <div class="map-tools">
+              <details class="layer-drop">
+                <summary>Predicted risk</summary>
+                <div class="layer-menu" id="layers"></div>
+              </details>
+              <button class="icon-btn" id="map-full" type="button" aria-label="Fullscreen map">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 4H4v4M16 4h4v4M4 16v4h4M20 16v4h-4"/></svg>
+              </button>
+            </div>
           </div>
-        </div>
-        <aside class="panel" id="inspect"></aside>
+          <div class="map-frame"><div id="map"></div></div>
+          <div class="legend">
+            <span><i class="swatch" style="background:var(--risk-low)"></i>Low</span>
+            <span><i class="swatch" style="background:var(--risk-moderate)"></i>Moderate</span>
+            <span><i class="swatch" style="background:var(--risk-high)"></i>High</span>
+            <span><i class="swatch" style="background:var(--risk-critical)"></i>Critical</span>
+          </div>
+        </section>
+        <aside class="rail">
+          <section class="panel" id="event-card"></section>
+          <section class="panel" id="distribution"></section>
+          <section class="panel" id="inspect"></section>
+        </aside>
       </section>
-      <section class="panel" style="margin-top:14px">
-        <h2>Risk distribution</h2>
-        <div id="distribution"></div>
+      <section class="lower">
+        <section class="panel" id="timeline"></section>
+        <section class="panel" id="source-card"></section>
+        <section class="panel" id="engine-card"></section>
       </section>
     </main>
   </template>

@@ -49,6 +49,7 @@ def build_state(config: dict[str, Any], pipeline: dict[str, Any] | None = None) 
         "event": _event(config).to_dict(),
         "header": _header(config, pipeline, quality),
         "kpis": _kpis(pipeline, quality),
+        "distribution": _distribution(pipeline),
         "layers": _layers(demo),
         "prediction": _prediction(config, pipeline, quality).to_dict(),
         "timeline": [point.to_dict() for point in _timeline(pipeline, quality)],
@@ -186,6 +187,24 @@ def _kpis(pipeline: dict[str, Any] | None, quality: str) -> dict[str, Any]:
         "active_alerts": _demo(None, "no official alerts"),
         "latest_observation": _demo(pipeline.get("prediction_date"), "configured analog, not an acquisition"),
         "prediction_horizon": _demo("eve of peak analog", "not a calibrated lead time"),
+    }
+
+
+def _distribution(pipeline: dict[str, Any] | None) -> dict[str, Any]:
+    if pipeline is None or not pipeline.get("counts"):
+        return {
+            "status": "awaiting_model_data",
+            "counts": None,
+            "note": "Official area percentages are not calculated.",
+        }
+    keys = ("low", "moderate", "high", "critical")
+    counts = {key: int(pipeline["counts"].get(key, 0)) for key in keys}
+    return {
+        "status": "demo",
+        "data_label": "DEMO DATA",
+        "counts": counts,
+        "total": sum(counts.values()),
+        "note": "Synthetic sample-grid cell counts. Not official flooded-area percentages.",
     }
 
 

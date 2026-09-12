@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SobekAI · Risk Map</title>
   <link rel="icon" type="image/png" href="/assets/sobek-mark.png">
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="/assets/sobek.css">
 </head>
@@ -18,11 +18,13 @@
   <div id="app" class="boot"><img class="logo" src="/assets/sobek-logo.png" alt="SobekAI"><p>Loading flood intelligence…</p></div>
   <template id="page-template">
     <main class="page">
-      <h1>Flood risk surface</h1>
-      <section class="grid two">
+      <p class="eyebrow">Satellite-powered flood intelligence</p>
+      <h1>Flood <em>risk map</em></h1>
+      <p class="lede">Compare model-estimated risk with the available flood extent. Disabled layers are not simulated.</p>
+      <section class="two">
         <aside class="panel" id="layers"></aside>
-        <div class="stage">
-          <div id="map"></div>
+        <div>
+          <div class="map-frame"><div id="map"></div></div>
           <div class="compare">
             <label>Predicted risk <input id="compare-slider" type="range" min="0" max="100" value="15"> Actual flood extent</label>
             <p>DEMO DATA if overlays are present. The actual layer is a synthetic mask, not the official EMS extent.</p>

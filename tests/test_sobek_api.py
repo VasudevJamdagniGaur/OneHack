@@ -27,6 +27,8 @@ def test_demo_state_is_labeled(config=None):
         "detector": "ibm-nasa-geospatial/Prithvi-EO-2.0-300M-TL-Sen1Floods11",
     }
     state = build_state(config, pipeline)
+    assert state["distribution"]["counts"] == {"low": 1, "moderate": 1, "high": 1, "critical": 0}
+    assert state["distribution"]["data_label"] == "DEMO DATA"
     assert state["data_label"] == "DEMO DATA"
     assert state["metrics"] == PENDING_METRICS.to_dict()
     assert state["event"]["severity"] is None
