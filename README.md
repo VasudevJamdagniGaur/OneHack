@@ -1,5 +1,7 @@
 # SobekAI — Satellite-Powered Flood Intelligence & Early Warning
 
+![SobekAI](app/frontend/site/assets/sobek-logo.png)
+
 Satellite-powered flood early-warning prototype for **AI-1. Satellite-Based Real-Time Natural Disaster Prediction**, scoped to **flood only**.
 
 This is **historical satellite-based flood risk prediction**. It is not a live satellite feed.

@@ -18,7 +18,7 @@ const SobekAI = (() => {
     const links = PAGES.map(([id, href, label]) =>
       `<a class="item${id === active ? " active" : ""}" href="${href}">${label}</a>`
     ).join("");
-    return `<header class="nav"><div class="brand"><span class="mark" aria-hidden="true"></span><div><strong>SOBEKAI</strong><span>Satellite-Powered Flood Intelligence & Early Warning</span></div></div>${links}</header><div class="waterline" aria-hidden="true"></div>`;
+    return `<header class="nav"><a class="brand" href="/"><img class="logo" src="/assets/sobek-logo.png" alt="SobekAI"><span>Satellite-Powered Flood Intelligence & Early Warning</span></a>${links}</header><div class="waterline" aria-hidden="true"></div>`;
   }
 
   function banner(state) {
@@ -116,7 +116,7 @@ const SobekAI = (() => {
       root.innerHTML = chrome(page) + banner(state) + document.getElementById("page-template").innerHTML;
       hydrate(page, state);
     } catch (error) {
-      root.innerHTML = `<header class="nav"><strong>SOBEKAI</strong></header><div class="page"><div class="empty">Model unavailable. ${error.message}</div></div>`;
+      root.innerHTML = `<header class="nav"><a class="brand" href="/"><img class="logo" src="/assets/sobek-logo.png" alt="SobekAI"></a></header><div class="page"><div class="empty">Model unavailable. ${error.message}</div></div>`;
     }
   }
 
