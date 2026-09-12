@@ -1,0 +1,25 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+.DS_Store
+Thumbs.db
+
+# Local data downloads and generated rasters
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# Keep the samples directory; generated sample files may be overwritten
+models/*.joblib
+models/*.pkl
+models/prithvi/*.pt
+models/prithvi/*.ckpt
+models/prithvi/config.yaml
+models/prithvi/config.local.yaml
+models/prithvi/examples/

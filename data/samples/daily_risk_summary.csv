@@ -1,0 +1,8 @@
+sample_day,mean_risk,is_prediction_day,is_analog_peak_day
+1,0.18372654015218726,False,False
+2,0.21657066762174892,False,False
+3,0.2632561217579701,False,False
+4,0.3324922456433033,False,False
+5,0.4375665064328464,False,False
+6,0.6207343182429931,True,False
+7,0.6647439469175594,False,True

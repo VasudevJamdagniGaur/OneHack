@@ -1,0 +1,185 @@
+# Flood-AI prototype configuration.
+# Historical replay only. This is not a live satellite feed.
+
+project:
+  name: flood-ai
+  hazard: flood
+  mode: historical_replay
+  data_mode: sample          # sample | real  (real data is not downloaded yet)
+  disclaimer: >
+    Historical public-data replay. Predictions are simulated from archived
+    satellite-derived products, not a live satellite downlink.
+
+region:
+  id: ahr_valley_de
+  name: Ahr Valley
+  country: Germany
+  admin: Rhineland-Palatinate
+  bbox:
+    min_lon: 6.85
+    min_lat: 50.45
+    max_lon: 7.25
+    max_lat: 50.62
+  center:
+    lon: 7.05
+    lat: 50.54
+  crs: EPSG:4326
+
+event:
+  id: emsr517_aoi15
+  name: July 2021 Western Germany floods
+  official_source: Copernicus EMS Rapid Mapping EMSR517
+  official_url: https://mapping.emergency.copernicus.eu/activations/EMSR517/
+  activation_time_utc: "2021-07-13T17:11:00Z"
+  peak_start: "2021-07-14"
+  peak_end: "2021-07-15"
+  ground_truth_product: EMSR517 AOI15 Bad Neuenahr-Ahrweiler delineation
+  ground_truth_delivery: "2021-07-16"
+  notes: >
+    CEMS was activated on 13 July because a severe flood was expected.
+    Peak flooding in the Ahr valley occurred 14-15 July 2021.
+
+paths:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  samples_dir: data/samples
+  models_dir: models
+  output_dir: data/processed
+
+grid:
+  resolution_m: 250
+  sample_rows: 48
+  sample_cols: 64
+
+temporal:
+  feature_start: "2021-07-01"
+  feature_end: "2021-07-15"
+  prediction_date: "2021-07-13"   # day before / at onset; used for early-warning demo
+  validation_date: "2021-07-16"   # official flood-extent product date
+  sample_days: 7
+  split:
+    strategy: event_holdout
+    train: "Do not train on Ahr valley flood-extent labels from this event."
+    validation: "Optional: other EMSR517 AOIs (e.g. Erftstadt) if a supervised model is added later."
+    test: "Ahr Valley EMSR517 AOI15 flood extent vs 13 July risk map."
+
+datasets:
+  precipitation:
+    name: CHIRPS v3.0 daily SAT
+    official_source: UCSB Climate Hazards Center
+    url: https://data.chc.ucsb.edu/products/CHIRPS/v3.0/daily/final/sat/2021/
+    info_url: https://www.chc.ucsb.edu/data/chirps3
+    satellite_inputs: Thermal infrared + NASA IMERG Late V07 daily disaggregation
+    spatial_resolution: 0.05 deg (~5 km)
+    temporal_resolution: daily
+    lag:
+      final_product: "Typically available the third week of the following month."
+      prelim_product: "About 2 days after each pentad (2nd, 7th, 12th, 17th, 22nd, 27th)."
+      prototype_note: >
+        This replay uses the archived final SAT product as a stand-in.
+        A live system would use CHIRPS prelim or IMERG Late (~4-14 hour to 2-day lag).
+  dem:
+    name: Copernicus DEM GLO-30
+    official_source: Copernicus Programme / AWS Open Data
+    url: https://registry.opendata.aws/copernicus-dem/
+    satellite_inputs: Radar-derived digital surface model
+    spatial_resolution: 30 m
+    temporal_resolution: static
+    lag: "Static terrain layer. No revisit. Acquired as a multi-year mosaic."
+    backup:
+      name: NASA SRTM GL1 V003
+      url: https://doi.org/10.5067/MEASURES/SRTM/SRTMGL1.003
+      spatial_resolution: 1 arc-second (~30 m)
+  ground_truth:
+    name: Copernicus EMSR517 flood delineation
+    official_source: Copernicus Emergency Management Service
+    url: https://mapping.emergency.copernicus.eu/activations/EMSR517/
+    product: vector flood extent (observedEvent)
+    aoi: AOI15 Bad Neuenahr-Ahrweiler
+    spatial_resolution: event-scale polygons from satellite delineation
+    used_as: validation_only
+  optional_later:
+    sentinel1:
+      name: Sentinel-1 GRD IW VV/VH
+      url: https://dataspace.copernicus.eu/
+      spatial_resolution: 10 m
+      revisit_days: "6 days with two-satellite constellation over Europe"
+      role: "During-event water mapping, not the primary pre-event risk driver."
+
+features:
+  enabled:
+    - precip_1d
+    - precip_3d
+    - precip_7d
+    - elevation
+    - slope
+    - hand
+    - dist_to_river
+  excluded_for_v1:
+    - ndwi
+    - ndvi
+    - ndbi
+    - sentinel1_backscatter
+  reason: >
+    Pre-event flood risk for this valley flood is driven by accumulating rainfall
+    and topographic exposure. Optical indices are often cloudy during the storm
+    and are better at detecting water after it is already there.
+
+model:
+  type: expert_weighted
+  trained: false
+  algorithm: "Transparent weighted score. Random Forest / LightGBM is Phase 2+."
+  weights:
+    precip_3d: 0.35
+    precip_7d: 0.15
+    hand: 0.25
+    slope: 0.10
+    dist_to_river: 0.15
+  scaling:
+    precip_3d_mm: 80.0
+    precip_7d_mm: 150.0
+    hand_m: 40.0
+    slope_deg: 15.0
+    dist_to_river_m: 3000.0
+
+risk_thresholds:
+  low: 0.25
+  moderate: 0.50
+  high: 0.75
+  critical: 0.90
+
+alerts:
+  high_risk_label: HIGH
+  compare_with_actual: true
+
+sample:
+  seed: 42
+  labeled: SYNTHETIC SAMPLE DATA
+  analog_peak_day_index: 6
+
+# Published IBM/NASA flood segmenter. It maps water on Sentinel-2.
+# It is not an earthquake model and it is not a pre-event risk forecast.
+prithvi:
+  enabled: true
+  model_id: ibm-nasa-geospatial/Prithvi-EO-2.0-300M-TL-Sen1Floods11
+  backbone: prithvi_eo_v2_300_tl
+  role: event_flood_extent
+  url: https://huggingface.co/ibm-nasa-geospatial/Prithvi-EO-2.0-300M-TL-Sen1Floods11
+  bands:
+    - BLUE
+    - GREEN
+    - RED
+    - NIR_NARROW
+    - SWIR_1
+    - SWIR_2
+  s2l1c_band_indices: [1, 2, 3, 8, 11, 12]
+  num_classes: 2
+  flood_class: 1
+  tile_size: 512
+  weights_dir: models/prithvi
+  checkpoint: Prithvi-EO-V2-300M-TL-Sen1Floods11.pt
+  model_config: config.yaml
+  scene: null
+  notes: >
+    Used to detect flood water on a Sentinel-2 scene from the historical
+    event (during/after the flood). The early-warning score stays separate.
