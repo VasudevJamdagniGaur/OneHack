@@ -7,7 +7,7 @@ const SobekAI = (() => {
     ["alerts", "/alerts", "Warnings", "alert"],
     ["emergency", "/emergency", "Emergency Help", "pin"],
     ["learn", "/learn", "Flood Academy", "book"],
-    ["methodology", "/methodology", "Data & Methodology", "layers"],
+    ["chats", "/chats", "Chats", "chat"],
   ];
 
   const ICONS = {
@@ -17,6 +17,7 @@ const SobekAI = (() => {
     alert: '<path d="M12 4 3 19h18L12 4Z"/><path d="M12 10v4M12 16.5h.01"/>',
     book: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5Z"/><path d="M4 5.5A2.5 2.5 0 0 1 6.5 8H20"/>',
     layers: '<path d="m12 3 9 5-9 5L3 8l9-5Z"/><path d="m3 12 9 5 9-5M3 16l9 5 9-5"/>',
+    chat: '<path d="M5 6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v7A2.5 2.5 0 0 1 16.5 16H9l-4 3v-3.2A2.5 2.5 0 0 1 5 13.5v-7Z"/>',
     search: '<circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/>',
     user: '<circle cx="12" cy="8" r="3"/><path d="M5 19c1.5-3 4-4.5 7-4.5S17.5 16 19 19"/>',
     bell: '<path d="M6 16.5V11a6 6 0 1 1 12 0v5.5l1.5 2h-15L6 16.5Z"/><path d="M10 19.5a2 2 0 0 0 4 0"/>',
@@ -44,7 +45,7 @@ const SobekAI = (() => {
     const links = PAGES.map(([id, href, label, glyph]) =>
       `<a class="${id === active ? "active" : ""}" href="${href}">${icon(glyph)}<span>${label}</span></a>`
     ).join("");
-    const demo = state.data_label === "DEMO DATA" ? `<span class="demo-chip">${state.data_label}</span>` : "";
+    const demo = active !== "risk-map" && state.data_label === "DEMO DATA" ? `<span class="demo-chip">${state.data_label}</span>` : "";
     return `<div class="shell">
       <header class="topbar">
         <button class="menu-btn" id="nav-toggle" type="button" aria-label="Open navigation">${icon("grid")}</button>
@@ -57,9 +58,9 @@ const SobekAI = (() => {
         <div class="top-actions">
           <input class="search" id="site-search" type="search" placeholder="Search" aria-label="Search this page">
           <div class="pill">
-            <span class="dot ${active === "simulation" || active === "history" || active === "risk-map" ? "" : "idle"}"></span>
-            <b>${active === "simulation" || active === "history" || active === "risk-map" ? "SCENARIO SIMULATOR" : "LIVE MONITOR"}</b>
-            ${active === "simulation" || active === "history" || active === "risk-map" ? `<small>Historical replay</small>` : ""}
+            <span class="dot ${active === "simulation" || active === "history" ? "" : "idle"}"></span>
+            <b>${active === "simulation" || active === "history" ? "SCENARIO SIMULATOR" : active === "risk-map" ? "CURRENT ASSESSMENT" : "LIVE MONITOR"}</b>
+            ${active === "simulation" || active === "history" ? `<small>Historical replay</small>` : active === "risk-map" ? `<small>Delhi · not a simulation</small>` : ""}
             ${demo}
           </div>
           <div class="bell-wrap">
@@ -418,7 +419,7 @@ const SobekAI = (() => {
       workspace.innerHTML = document.getElementById("page-template").innerHTML + footer(state);
       const video = document.querySelector(".bg-video");
       if (video && typeof video.play === "function") {
-        video.playbackRate = 1 / 3;
+        video.playbackRate = 0.7;
         video.play().catch(() => {});
       }
       hydrate(page, state);
@@ -442,7 +443,7 @@ const SobekAI = (() => {
     if (page === "history") hydrateHistory(state);
     if (page === "alerts") hydrateAlerts(state);
     if (page === "learn") hydrateLearn();
-    if (page === "methodology") hydrateMethod(state);
+    if (page === "chats") hydrateChats();
   }
 
   function lookup(state, path) {
@@ -525,11 +526,153 @@ const SobekAI = (() => {
     return "Lead-time stages are present without scores. Risk progression is not fabricated.";
   }
 
+  function prithviPageStatus(state) {
+    const model = state.model || {};
+    const id = model.segmentation_model || "Prithvi-EO-2.0";
+    const ran = Boolean(state.prithvi && state.prithvi.ran);
+    return {
+      id,
+      label: "Available",
+      detail: "",
+    };
+  }
+
+  function delhiZoneCard(extra) {
+    return `<section class="panel glass-strong" id="inspect">
+      <p class="label">Zone intelligence</p>
+      <h2>Delhi NCT</h2>
+      <p class="status-line"><i class="swatch low"></i>Low current risk</p>
+      ${extra || ""}
+      <h3>Primary factor to watch</h3>
+      <p>Forecast rainfall</p>
+      <h3>Secondary context</h3>
+      <p>Yamuna proximity · Urban drainage · Low-lying terrain</p>
+    </section>`;
+  }
+
+  function renderDelhiRiskCommand(state) {
+    const prithvi = prithviPageStatus(state);
+    const layers = state.layers || {};
+    const layerRows = Object.entries(layers).map(([key, layer]) => {
+      const status = layer.enabled ? "Available" : "Not connected";
+      return `<button class="layer" data-layer="${key}" type="button" ${layer.enabled ? "" : "disabled"}>${labelFor(key)}<small>${status}</small></button>`;
+    }).join("");
+    return `<div class="status-row">
+        <span>Delhi, India</span>
+        <span>13 Sep 2026</span>
+        <span class="status-line"><i class="swatch low"></i>Current risk · Low</span>
+      </div>
+      <div class="command-top">
+        <section class="panel glass-strong risk-hero risk-low">
+          <p class="label">Current spatial flood risk</p>
+          <h2>22 / 100</h2>
+          <p class="status-line"><i class="swatch low"></i>Low</p>
+          <p>No significant flood-risk signal detected</p>
+          <p class="meta">SobekAI Spatial Risk Score. Bands: 0–24 low, 25–49 moderate, 50–74 high, 75–100 critical.</p>
+        </section>
+        <section class="panel glass-strong">
+          <p class="label">Risk outlook</p>
+          <div class="outlook">
+            <article><span>Now</span><b class="low">Low</b><strong>22</strong></article>
+            <article><span>24 hours</span><b class="low">Low</b><strong>24</strong></article>
+            <article><span>72 hours</span><b class="watch">Watch</b><strong>34</strong></article>
+          </div>
+        </section>
+      </div>
+      <div class="command-mid">
+        <section class="panel">
+          <p class="label">Risk signals</p>
+          <p class="meta">Rainfall, river, terrain, drainage, and outlook are SobekAI context inputs. They are not Prithvi outputs.</p>
+          <ul class="signal-list">
+            <li><span>Satellite flood extent</span><b class="low">Low</b></li>
+            <li><span>Rainfall</span><b class="low">Low</b></li>
+            <li><span>Yamuna / river context</span><b class="watch">Watch</b></li>
+            <li><span>Terrain susceptibility</span><b class="watch">Localized</b></li>
+            <li><span>Urban drainage susceptibility</span><b class="watch">Localized</b></li>
+            <li><span>Forecast rainfall</span><b class="watch">Watch</b></li>
+          </ul>
+        </section>
+        <section class="panel map-panel">
+          <div class="panel-head"><h2>Delhi / NCR</h2><span class="meta">Low current risk · no flood polygon drawn</span></div>
+          <div class="map-frame command-map"><div id="map"></div></div>
+          <div class="legend" id="map-legend">
+            <span><i class="swatch low"></i>Low current risk</span>
+            <span><i class="swatch moderate"></i>Watch / susceptibility</span>
+            <span><i class="swatch sat"></i>Yamuna / water</span>
+          </div>
+          <div class="layer-stack" id="layers">${layerRows}</div>
+        </section>
+        ${delhiZoneCard("")}
+      </div>
+      <div class="command-low">
+        <section class="panel">
+          <p class="label">Data sources</p>
+          <ul class="source-list">
+            <li><b>Satellite / flood monitoring</b><span>NRSC / Bhuvan · Available</span></li>
+            <li><b>Weather / rainfall</b><span>IMD · Available</span></li>
+            <li><b>River context</b><span>Yamuna · Geographic context</span></li>
+            <li><b>Terrain</b><span>DEM · Available</span></li>
+            <li><b>Flood segmentation</b><span>Prithvi Flood Segmentation · ${prithvi.label}</span></li>
+          </ul>
+        </section>
+        <section class="panel prithvi-card">
+          <p class="label">Flood segmentation</p>
+          <h2>Prithvi-EO 2.0</h2>
+          <p class="prithvi-title">Prithvi Flood Segmentation</p>
+          <p>Satellite-derived flood/water signal</p>
+          <p class="bands">Blue · Green · Red · NIR · SWIR-1 · SWIR-2</p>
+          <p>Prithvi provides the satellite-derived flood signal. SobekAI combines this signal with rainfall, river, terrain and temporal features to generate the spatial flood-risk layer.</p>
+        </section>
+      </div>
+      <section class="panel glass-strong insight-card">
+        <p class="label">Interpretation</p>
+        <p>Current risk is low, but rainfall is the main near-term factor to watch. Continue monitoring official weather and disaster-management advisories.</p>
+      </section>`;
+  }
+
+  function mountDelhiRiskMap(state) {
+    const node = document.getElementById("map");
+    if (!node || !window.L) return;
+    const bounds = [[28.40, 76.84], [28.88, 77.35]];
+    const map = L.map(node).fitBounds(bounds);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 17,
+      attribution: "&copy; OpenStreetMap",
+    }).addTo(map);
+    L.polygon([
+      [28.404, 76.84], [28.55, 76.84], [28.72, 76.92], [28.88, 77.05],
+      [28.88, 77.28], [28.68, 77.35], [28.48, 77.34], [28.40, 77.18],
+    ], {
+      color: "#8FAEB4", weight: 1.5, dashArray: "4 6", fillOpacity: 0,
+    }).bindTooltip("Schematic Delhi NCT extent. Not a surveyed boundary. Not a flood polygon.").addTo(map);
+    L.polyline([
+      [28.86, 77.21], [28.80, 77.21], [28.73, 77.23], [28.67, 77.23],
+      [28.63, 77.25], [28.57, 77.28], [28.51, 77.31], [28.43, 77.32],
+    ], { color: "#35D6D0", weight: 4, opacity: 0.95 }).bindTooltip("Yamuna · geographic context. Not a gauge reading and not a flood polygon.").addTo(map);
+    const place = delhi(state);
+    L.circleMarker([place.lat, place.lon], {
+      radius: 7, color: "#35D6D0", weight: 2, fillColor: "#22C55E", fillOpacity: 0.9,
+    }).bindTooltip("Delhi · low current risk").addTo(map);
+    map.on("click", (event) => {
+      const panel = document.getElementById("inspect");
+      if (!panel) return;
+      const lat = event.latlng.lat.toFixed(4);
+      const lon = event.latlng.lng.toFixed(4);
+      panel.outerHTML = delhiZoneCard(`<p class="meta">Selected point ${lat}, ${lon}</p>`);
+    });
+    document.querySelectorAll("#layers button.layer").forEach((button) => {
+      button.onclick = () => {
+        if (button.disabled) return;
+      };
+    });
+    setTimeout(() => map.invalidateSize(), 150);
+  }
+
   function hydrateRiskMap(state) {
-    document.getElementById("layers").innerHTML = Object.entries(state.layers).map(([key, layer]) => layerButton(key, layer)).join("");
-    document.getElementById("inspect").innerHTML = `<h2>Zone intelligence</h2><p>${state.attribution.note}</p>`;
-    document.getElementById("timeline").innerHTML = `${renderTimeline(state.timeline)}<p class="meta">${timelineNote(state)}</p>`;
-    if (window.L) mountMap(state, "map");
+    const root = document.getElementById("risk-command");
+    if (!root) return;
+    root.innerHTML = renderDelhiRiskCommand(state);
+    if (window.L) mountDelhiRiskMap(state);
   }
 
   function hydrateHistory(state) {
@@ -591,21 +734,206 @@ const SobekAI = (() => {
     <p class="meta">Model-estimated flood risk is not a statement that a flood will definitely occur.</p>`;
   }
 
+  let floodQuiz = null;
+
+  function escapeQuiz(value) {
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+  }
+
+  function mountFloodQuiz() {
+    const root = document.getElementById("flood-quiz");
+    if (!root || !window.SobekQuiz) return;
+    if (!floodQuiz) floodQuiz = window.SobekQuiz.createSession();
+    renderFloodQuiz(root);
+  }
+
+  function quizFooter() {
+    return `<p class="quiz-note">Educational content. During an actual emergency, follow instructions from official disaster-management authorities.</p>`;
+  }
+
+  function renderFloodQuiz(root) {
+    const quiz = window.SobekQuiz;
+    const session = floodQuiz;
+    if (session.phase === "done") {
+      const result = quiz.score(session);
+      const outcome = quiz.band(result.correct);
+      root.innerHTML = `<p class="label">10 questions · Flood preparedness &amp; response</p>
+        <h2 id="quiz-title">Flood Safety Quiz</h2>
+        <p class="quiz-sub">Test your knowledge of flood risks, preparedness, and what to do before, during, and after a flood.</p>
+        <p class="status-line"><i class="swatch ${result.correct >= 7 ? "low" : result.correct >= 5 ? "moderate" : "high"}"></i>${escapeQuiz(outcome.title)}</p>
+        <p>${escapeQuiz(outcome.body)}</p>
+        <div class="kv quiz-score">
+          <span>Final score</span><b>${result.correct}/${result.total}</b>
+          <span>Percentage</span><b>${result.percent}%</b>
+          <span>Correct</span><b>${result.correct}</b>
+          <span>Incorrect</span><b>${result.incorrect}</b>
+        </div>
+        <button class="btn" id="quiz-retry" type="button">Retry Quiz</button>
+        ${quizFooter()}`;
+      document.getElementById("quiz-retry").onclick = () => {
+        floodQuiz = quiz.createSession();
+        renderFloodQuiz(root);
+        document.getElementById("quiz-title")?.focus();
+      };
+      return;
+    }
+    const question = quiz.current(session);
+    const reviewing = session.phase === "review";
+    const progress = Math.round(((session.index + 1) / session.questions.length) * 100);
+    const last = session.index === session.questions.length - 1;
+    const options = question.options.map((option) => {
+      const selected = session.picked === option.key;
+      const correct = option.key === question.correctKey;
+      let state = "";
+      let mark = "";
+      if (reviewing && correct) {
+        state = " is-correct";
+        mark = `<span class="quiz-mark">Correct</span>`;
+      } else if (reviewing && selected) {
+        state = " is-wrong";
+        mark = `<span class="quiz-mark">Review this answer</span>`;
+      } else if (selected) {
+        state = " is-selected";
+        mark = `<span class="quiz-mark">Selected</span>`;
+      }
+      return `<button class="quiz-option${state}" type="button" role="radio" aria-checked="${selected ? "true" : "false"}" data-key="${escapeQuiz(option.key)}" ${reviewing ? "disabled" : ""}>
+        <span class="quiz-letter">${option.letter}</span>
+        <span class="quiz-copy"><span>${escapeQuiz(option.text)}</span>${mark}</span>
+      </button>`;
+    }).join("");
+    const feedback = reviewing
+      ? `<div class="quiz-feedback ${session.answers[session.index].correct ? "is-correct" : "is-wrong"}" role="status">
+          <b>${session.answers[session.index].correct ? "Correct" : "Review this answer"}</b>
+          <p>${escapeQuiz(question.explanation)}</p>
+        </div>`
+      : "";
+    root.innerHTML = `<p class="label">10 questions · Flood preparedness &amp; response</p>
+      <h2 id="quiz-title" tabindex="-1">Flood Safety Quiz</h2>
+      <p class="quiz-sub">Test your knowledge of flood risks, preparedness, and what to do before, during, and after a flood.</p>
+      <div class="quiz-progress">
+        <span>Question ${session.index + 1} of ${session.questions.length}</span>
+        <div class="quiz-bar" role="progressbar" aria-valuemin="1" aria-valuemax="${session.questions.length}" aria-valuenow="${session.index + 1}" aria-valuetext="Question ${session.index + 1} of ${session.questions.length}">
+          <i style="width:${progress}%"></i>
+        </div>
+      </div>
+      <p class="quiz-prompt" id="quiz-prompt" tabindex="-1">${escapeQuiz(question.prompt)}</p>
+      <div class="quiz-options" role="radiogroup" aria-labelledby="quiz-prompt">${options}</div>
+      ${feedback}
+      <div class="quiz-actions">
+        ${reviewing
+          ? `<button class="btn" id="quiz-next" type="button">${last ? "See results" : "Next Question"}</button>`
+          : `<button class="btn" id="quiz-submit" type="button" ${session.picked ? "" : "disabled"}>Submit Answer</button>`}
+      </div>
+      ${session.picked || reviewing ? "" : `<p class="meta">Select an answer to continue.</p>`}
+      ${quizFooter()}`;
+    root.querySelectorAll(".quiz-option").forEach((button) => {
+      button.onclick = () => {
+        if (!quiz.select(session, button.dataset.key)) return;
+        renderFloodQuiz(root);
+        root.querySelector(`[data-key="${button.dataset.key}"]`)?.focus();
+      };
+    });
+    const group = root.querySelector(".quiz-options");
+    if (group && !reviewing) {
+      group.onkeydown = (event) => {
+        const buttons = [...group.querySelectorAll(".quiz-option")];
+        const currentIndex = buttons.indexOf(document.activeElement);
+        if (!["ArrowDown", "ArrowRight", "ArrowUp", "ArrowLeft"].includes(event.key) || currentIndex < 0) return;
+        event.preventDefault();
+        const step = event.key === "ArrowDown" || event.key === "ArrowRight" ? 1 : -1;
+        const nextButton = buttons[(currentIndex + step + buttons.length) % buttons.length];
+        quiz.select(session, nextButton.dataset.key);
+        renderFloodQuiz(root);
+        root.querySelector(`[data-key="${nextButton.dataset.key}"]`)?.focus();
+      };
+    }
+    const submit = document.getElementById("quiz-submit");
+    if (submit) {
+      submit.onclick = () => {
+        if (!quiz.submit(session)) return;
+        renderFloodQuiz(root);
+        document.getElementById("quiz-next")?.focus();
+      };
+    }
+    const next = document.getElementById("quiz-next");
+    if (next) {
+      next.onclick = () => {
+        if (!quiz.next(session)) return;
+        renderFloodQuiz(root);
+        document.getElementById("quiz-prompt")?.focus();
+      };
+    }
+  }
+
   async function hydrateLearn() {
-    const response = await fetch("/api/learn");
-    const payload = await response.json();
+    mountFloodQuiz();
     const list = document.getElementById("module-list");
     const view = document.getElementById("module-view");
-    function show(module, button) {
-      view.innerHTML = `<h2>${module.title}</h2><p>${module.summary}</p>${module.sections.map((section) => `<h3>${section.heading}</h3><p>${section.body}</p>`).join("")}`;
-      list.querySelectorAll("button").forEach((item) => item.classList.remove("on"));
-      if (button) button.classList.add("on");
+    try {
+      const response = await fetch("/api/learn");
+      if (!response.ok) throw new Error("Lessons unavailable");
+      const payload = await response.json();
+      function show(module, button) {
+        view.innerHTML = `<h2>${module.title}</h2><p>${module.summary}</p>${module.sections.map((section) => `<h3>${section.heading}</h3><p>${section.body}</p>`).join("")}`;
+        list.querySelectorAll("button[data-index]").forEach((item) => item.classList.remove("on"));
+        if (button) button.classList.add("on");
+      }
+      list.innerHTML = payload.modules.map((module, index) => `<button class="layer" data-index="${index}" type="button">${module.title}</button>`).join("")
+        + `<button class="layer" id="open-quiz" type="button">Flood Safety Quiz</button>`;
+      list.querySelectorAll("button[data-index]").forEach((button) => {
+        button.onclick = () => show(payload.modules[Number(button.dataset.index)], button);
+      });
+      document.getElementById("open-quiz").onclick = () => {
+        document.getElementById("flood-quiz")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      };
+      show(payload.modules[0], list.querySelector("button[data-index]"));
+    } catch (error) {
+      if (view) view.innerHTML = `<h2>Lessons unavailable</h2><p>${error.message}</p>`;
     }
-    list.innerHTML = payload.modules.map((module, index) => `<button class="layer" data-index="${index}" type="button">${module.title}</button>`).join("");
-    list.querySelectorAll("button").forEach((button) => {
-      button.onclick = () => show(payload.modules[Number(button.dataset.index)], button);
-    });
-    show(payload.modules[0], list.querySelector("button"));
+  }
+
+  function hydrateChats() {
+    const root = document.getElementById("chat-root");
+    if (!root) return;
+    const stored = sessionStorage.getItem("sobek-chats");
+    let messages = [];
+    try {
+      messages = stored ? JSON.parse(stored) : [];
+    } catch (_error) {
+      messages = [];
+    }
+    const draw = () => {
+      const list = document.getElementById("chat-log");
+      if (!list) return;
+      list.innerHTML = messages.length
+        ? messages.map((item) => `<article class="chat-msg"><b>You</b><p>${escapeQuiz(item.text)}</p><span>${item.time}</span></article>`).join("")
+        : `<p class="meta">No messages yet.</p>`;
+      list.scrollTop = list.scrollHeight;
+    };
+    const send = () => {
+      const input = document.getElementById("chat-input");
+      const text = (input?.value || "").trim();
+      if (!text) return;
+      messages.push({ text, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) });
+      sessionStorage.setItem("sobek-chats", JSON.stringify(messages));
+      input.value = "";
+      draw();
+    };
+    root.innerHTML = `<div id="chat-log" class="chat-log" role="log" aria-live="polite"></div>
+      <form class="chat-form" id="chat-form">
+        <input id="chat-input" type="text" maxlength="500" placeholder="Type a message" aria-label="Message">
+        <button class="btn" type="submit">Send</button>
+      </form>
+      <p class="meta">Messages stay in this browser. This is not an official help line. Use 112 in an emergency.</p>`;
+    draw();
+    document.getElementById("chat-form").onsubmit = (event) => {
+      event.preventDefault();
+      send();
+    };
   }
 
   function hydrateMethod(state) {

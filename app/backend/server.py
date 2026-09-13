@@ -39,7 +39,7 @@ ROUTES = {
     "/emergency": "emergency.html",
     "/simulation": "simulation.html",
     "/learn": "learn.html",
-    "/methodology": "methodology.html",
+    "/chats": "chats.html",
 }
 STATE: dict = {}
 

@@ -1,7 +1,7 @@
 (function () {
   const video = document.querySelector(".bg-video");
   if (!video) return;
-  const rate = 1 / 3;
+  const rate = 0.7;
   const slow = () => {
     if (video.playbackRate !== rate) video.playbackRate = rate;
   };

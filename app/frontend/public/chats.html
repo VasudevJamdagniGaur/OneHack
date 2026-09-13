@@ -3,10 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SobekAI · Simulation</title>
+  <title>SobekAI · Chats</title>
   <link rel="icon" type="image/png" href="/assets/sobek-mark.png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="/assets/sobek.css">
 </head>
 <body>
@@ -18,11 +17,13 @@
   <div id="app" class="boot"><img class="logo" src="/assets/sobek-logo.png" alt="SobekAI"><p>Loading flood intelligence…</p></div>
   <template id="page-template">
     <main class="page">
-      <div id="sim-root"></div>
+      <p class="eyebrow">Messages</p>
+      <h1>Chats</h1>
+      <p class="lede">Type a message and send it.</p>
+      <section class="panel chat-panel" id="chat-root"></section>
     </main>
   </template>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="/assets/sobek.js"></script>
-  <script>SobekAI.boot("simulation");</script>
+  <script>SobekAI.boot("chats");</script>
 </body>
 </html>

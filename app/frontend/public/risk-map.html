@@ -7,39 +7,25 @@
   <link rel="icon" type="image/png" href="/assets/sobek-mark.png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="/assets/sobek.css">
+  <link rel="stylesheet" href="/assets/sobek.css?v=delhi">
 </head>
 <body>
   <video class="bg-video" autoplay muted loop playsinline poster="/assets/sobek-bg-poster.jpg" aria-hidden="true">
-    <source src="/assets/sobek-bg.mp4" type="video/mp4">
+    <source src="/assets/sobek-bg.mp4?v=varuna" type="video/mp4">
   </video>
-  <script src="/assets/sobek-bg.js"></script>
+  <script src="/assets/sobek-bg.js?v=slow"></script>
   <div class="bg-shade" aria-hidden="true"></div>
   <div id="app" class="boot"><img class="logo" src="/assets/sobek-logo.png" alt="SobekAI"><p>Loading flood intelligence…</p></div>
   <template id="page-template">
-    <main class="page">
+    <main class="page command-page">
       <p class="eyebrow">Satellite-powered flood intelligence</p>
-      <h1>Flood <em>risk map</em></h1>
-      <p class="lede">Compare model-estimated risk with the available flood extent. Disabled layers are not simulated.</p>
-      <section class="two">
-        <aside class="panel" id="layers"></aside>
-        <div>
-          <div class="map-frame"><div id="map"></div></div>
-          <div class="compare">
-            <label>Predicted risk <input id="compare-slider" type="range" min="0" max="100" value="15"> Actual flood extent</label>
-            <p>Predicted risk is awaiting model data. Actual Kosi flood extent: historical flood extent ingestion pending. The slider does not invent a polygon.</p>
-          </div>
-        </div>
-        <aside class="panel" id="inspect"></aside>
-      </section>
-      <section class="panel" style="margin-top:14px">
-        <h2>Temporal timeline</h2>
-        <div class="timeline" id="timeline"></div>
-      </section>
+      <h1>Delhi flood <em>risk map</em></h1>
+      <p class="lede">Current spatial flood-risk assessment for Delhi using satellite observations, rainfall/weather information, terrain susceptibility and river context.</p>
+      <div id="risk-command"></div>
     </main>
   </template>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="/assets/sobek.js"></script>
+  <script src="/assets/sobek.js?v=delhi2"></script>
   <script>SobekAI.boot("risk-map");</script>
 </body>
 </html>
