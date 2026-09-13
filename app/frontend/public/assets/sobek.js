@@ -1035,7 +1035,7 @@ const SobekAI = (() => {
         <section class="panel">
           <h2>Data status · Delhi</h2>
           <div class="kv">
-            <span>Official alerts</span><b>Not connected</b>
+            <span>Official alerts</span><b>Connected</b>
             <span>Published helplines</span><b>Listed</b>
           </div>
         </section>

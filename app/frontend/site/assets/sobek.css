@@ -422,14 +422,14 @@ th { color: var(--color-muted); font-size: 11px; font-weight: 500; letter-spacin
 .command-page h2, .command-page .prithvi-title { color: #EAF7F7; }
 .command-page .meta, .command-page .quiet { color: #8FAEB4; }
 .command-page .panel {
-  background: rgba(8, 30, 38, 0.42);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(8, 30, 38, 0.378);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
 }
-.command-page .glass-strong { background: rgba(7, 24, 30, 0.72); }
+.command-page .glass-strong { background: rgba(7, 24, 30, 0.648); }
 .command-page .prithvi-card {
-  background: rgba(5, 20, 26, 0.72);
-  border: 1px solid rgba(53, 214, 208, 0.28);
+  background: rgba(5, 20, 26, 0.648);
+  border: 1px solid rgba(53, 214, 208, 0.25);
 }
 .command-page .prithvi-title { margin: 8px 0 4px; font-size: 20px; font-weight: 650; letter-spacing: -0.02em; color: #35D6D0; }
 .command-page .bands { color: #EAF7F7; font-weight: 600; }
@@ -438,7 +438,7 @@ th { color: var(--color-muted); font-size: 11px; font-weight: 500; letter-spacin
 .command-mid { display: grid; grid-template-columns: 0.85fr 1.4fr 0.9fr; gap: 12px; margin: 12px 0; align-items: start; }
 .command-top h2 { font-size: 40px; letter-spacing: -0.03em; }
 .outlook { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
-.outlook article { padding: 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.10); background: rgba(8, 30, 38, 0.35); }
+.outlook article { padding: 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.09); background: rgba(8, 30, 38, 0.315); }
 .outlook span, .signal-list span, .source-list span { display: block; color: #B5CDD1; font-size: 12px; }
 .outlook b, .signal-list b { font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
 .outlook strong { display: block; margin-top: 4px; color: #EAF7F7; font-size: 22px; }
