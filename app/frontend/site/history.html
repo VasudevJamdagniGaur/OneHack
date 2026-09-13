@@ -19,16 +19,17 @@
     <main class="page">
       <p class="eyebrow">Historical validation</p>
       <h1>Flood History</h1>
-      <p class="lede">Look back at historical flood events and trace how risk changed.</p>
+      <p class="lede">Five Indian historical scenarios. Opening one starts a simulator replay, not a live feed.</p>
       <section class="grid cards" id="events"></section>
       <section class="panel" id="event-detail" style="margin-top:16px">
         <h2>Prediction vs actual</h2>
-        <div class="split">
-          <div class="empty">SobekAI prediction overlay is available on the Risk Map as DEMO DATA.</div>
-          <div class="empty">Actual historical flood extent: official vectors not ingested.</div>
+        <div class="split" id="prediction-vs-actual">
+          <div class="empty">SobekAI predicted risk: awaiting model data.</div>
+          <div class="empty">Actual Kosi flood extent: historical flood extent ingestion pending.</div>
         </div>
         <p id="metrics"></p>
       </section>
+      <section class="panel" id="event-sources" style="margin-top:16px"></section>
       <section class="panel" style="margin-top:14px">
         <h2>Analytics</h2>
         <p>Risk vs time, rainfall vs time, flooded area vs time, and model performance will consume API series. No chart values are hardcoded here.</p>

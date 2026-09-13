@@ -48,14 +48,13 @@ No model has been trained. No real satellite tiles have been downloaded. Sample 
 
 ---
 
-## Recommended event
+## Active event
 
-**Ahr Valley, Germany — 14–15 July 2021**  
-Copernicus EMS Rapid Mapping **EMSR517** AOI15 (Bad Neuenahr-Ahrweiler).
+**Kosi / Koshi Flood — Bihar, India — August 2008**
 
-Why this one: official flood polygons, compact valley map, CEMS activation on 13 July *before* the peak, and a rainfall+terrain stack that fits an 8-hour build.
+The embankment breach is dated 18 August 2008 in public accounts. The planned validation source is the Global Flood Database (Terra/Aqua MODIS, 250 m). That raster is not ingested. Dashboard risk scores are awaiting model data. The earlier synthetic Ahr Valley grid is not shown on this map.
 
-Details: [REGION_PLAN.md](REGION_PLAN.md), [DATASET_PLAN.md](DATASET_PLAN.md), [MODEL_DESIGN.md](MODEL_DESIGN.md).
+Germany remains an archived event only. Details of the earlier candidate: [REGION_PLAN.md](REGION_PLAN.md).
 
 ---
 

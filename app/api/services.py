@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Any
 
 from app.content.learn import learning_modules
+from app.content.live_location import emergency_contacts, live_location
+from app.content.scenarios import flood_scenarios
 from app.shared.models import (
     Alert,
     DataSource,
@@ -23,7 +25,7 @@ PENDING_METRICS = ModelMetrics(
     f1=None,
     auroc=None,
     status="evaluation_pending",
-    note="Evaluation pending. Official flood-extent vectors are not ingested.",
+    note="Evaluation pending. The Global Flood Database extent for this event is not ingested.",
 )
 
 
@@ -46,13 +48,21 @@ def build_state(config: dict[str, Any], pipeline: dict[str, Any] | None = None) 
             "Historical satellite-based flood risk prediction. Not a live satellite feed."
         ),
         "region": _region(config),
-        "event": _event(config).to_dict(),
+        "event": _event(config),
+        "archived_events": _archived_events(config),
+        "scenarios": flood_scenarios(),
+        "live_location": live_location(),
+        "emergency_contacts": emergency_contacts(),
+        "mode": {
+            "live": "Live monitor. Not a live satellite feed. No real-time hazard feed is connected.",
+            "simulator": "Scenario simulator. Historical replay. Not live.",
+        },
         "header": _header(config, pipeline, quality),
         "kpis": _kpis(pipeline, quality),
         "distribution": _distribution(pipeline),
         "layers": _layers(demo),
         "prediction": _prediction(config, pipeline, quality).to_dict(),
-        "timeline": [point.to_dict() for point in _timeline(pipeline, quality)],
+        "timeline": [point.to_dict() for point in _timeline(pipeline, quality, config)],
         "alerts": [item.to_dict() for item in _alerts(pipeline, quality)],
         "metrics": PENDING_METRICS.to_dict(),
         "diagnostics": _diagnostics(pipeline),
@@ -135,37 +145,59 @@ def _region(config: dict[str, Any]) -> dict[str, Any]:
         "id": region["id"],
         "name": region["name"],
         "country": region["country"],
-        "admin": region["admin"],
+        "state": region.get("state"),
+        "admin": region.get("admin"),
+        "river": region.get("river"),
         "bbox": region["bbox"],
         "center": region["center"],
+        "anchor": region.get("anchor"),
+        "bbox_note": region.get("bbox_note"),
     }
 
 
-def _event(config: dict[str, Any]) -> HistoricalEvent:
+def _event(config: dict[str, Any]) -> dict[str, Any]:
     event = config["event"]
-    return HistoricalEvent(
+    region = config["region"]
+    record = HistoricalEvent(
         id=event["id"],
         name=event["name"],
-        region=f"{config['region']['name']}, {config['region']['country']}",
-        start_date=event["peak_start"],
-        end_date=event["peak_end"],
+        region=f"{event.get('state', region.get('state', ''))}, {event.get('country', region['country'])}",
+        start_date=event.get("peak_start") or "",
+        end_date=event.get("peak_end") or "",
         severity=None,
         data_sources=[event["official_source"]],
-        satellite_source="Planned CHIRPS v3 daily SAT plus Copernicus DEM. Not ingested.",
+        satellite_source=(
+            "Terra and Aqua MODIS, 250 m, via the Global Flood Database. "
+            "Not ingested. Sentinel-1 and Sentinel-2 are not used for this event."
+        ),
         validation_status="pending",
         official_url=event["official_url"],
-        note="Official EMS flood vectors are not in the repo. Severity is not scored.",
+        note=event.get("date_note") or "Historical flood extent ingestion pending.",
     )
+    payload = record.to_dict()
+    payload.update({
+        "country": event.get("country", region["country"]),
+        "state": event.get("state", region.get("state")),
+        "river": event.get("river", region.get("river")),
+        "year": event.get("year"),
+        "status_label": event.get("status_label", "Historical event"),
+        "severity_label": "Not scored",
+        "extent_status": "Historical flood extent ingestion pending.",
+        "supporting_sources": event.get("supporting_sources", []),
+        "active": True,
+    })
+    return payload
 
 
 def _header(config: dict[str, Any], pipeline: dict[str, Any] | None, quality: str) -> dict[str, Any]:
     prithvi = config.get("prithvi", {})
     detector = "Third-party pretrained model present" if pipeline and pipeline.get("detector") else "Not run on this region"
     return {
-        "selected_region": f"{config['region']['name']}, {config['region']['country']}",
-        "observation_date": config["temporal"]["prediction_date"] if quality == "demo" else None,
-        "observation_note": "Configured analog date. Not a satellite acquisition timestamp." if quality == "demo" else "AWAITING MODEL DATA",
-        "prediction_horizon": "From 13 July analog toward the 14-15 July peak" if quality == "demo" else None,
+        "selected_region": f"{config['region'].get('state', config['region']['name'])}, {config['region']['country']}",
+        "place": "India · Bihar",
+        "observation_date": config["temporal"].get("prediction_date") if quality == "demo" else None,
+        "observation_note": "AWAITING MODEL DATA" if quality != "demo" else "Configured analog date. Not a satellite acquisition timestamp.",
+        "prediction_horizon": None if quality != "demo" else "sample analog, not a calibrated lead time",
         "satellite_source": config["datasets"]["precipitation"]["name"],
         "satellite_status": "planned, not ingested",
         "model_status": f"SobekAI risk engine: untrained expert-weighted baseline. Prithvi-EO: {detector}.",
@@ -213,12 +245,16 @@ def _layers(demo: bool) -> dict[str, Any]:
         return {"enabled": enabled, "reason": reason, "data_quality": "demo" if enabled else "unavailable"}
 
     return {
-        "predicted_risk": layer(demo, "Synthetic sample overlay" if demo else "Awaiting model data"),
-        "actual_flood": layer(demo, "Synthetic flood mask, not the official EMS extent" if demo else "Official extent not ingested"),
-        "satellite": layer(False, "No Sentinel scene for this region yet"),
-        "rainfall": layer(False, "CHIRPS not ingested"),
-        "elevation": layer(False, "DEM not ingested"),
-        "boundaries": layer(False, "Administrative boundaries not loaded"),
+        "predicted_risk": layer(demo, "Synthetic sample overlay" if demo else "No SobekAI risk grid has been produced for this event."),
+        "actual_flood": layer(
+            demo,
+            "Synthetic flood mask, not an official extent" if demo else "Historical flood extent ingestion pending.",
+        ),
+        "satellite": layer(False, "No satellite scene has been ingested for this event."),
+        "rainfall": layer(False, "CHIRPS not ingested."),
+        "elevation": layer(False, "DEM not ingested."),
+        "boundaries": layer(False, "Administrative boundaries not loaded."),
+        "rivers": layer(False, "No river geometry file has been loaded. The base map may still label the Kosi."),
     }
 
 
@@ -236,11 +272,28 @@ def _prediction(config: dict[str, Any], pipeline: dict[str, Any] | None, quality
     )
 
 
-def _timeline(pipeline: dict[str, Any] | None, quality: str) -> list[TimelinePoint]:
+def _timeline(pipeline: dict[str, Any] | None, quality: str, config: dict[str, Any] | None = None) -> list[TimelinePoint]:
     if pipeline is None:
+        start = (config or {}).get("event", {}).get("peak_start") or "2008-08-18"
         return [
-            TimelinePoint(label, label, None, None, None, "awaiting_model_data", "Awaiting model data")
-            for label in ("T-48h", "T-24h", "T-12h", "T0", "EVENT")
+            TimelinePoint(
+                "breach",
+                "Flood event",
+                start,
+                None,
+                None,
+                "awaiting_model_data",
+                "Embankment breach dated 18 August 2008 in public accounts. This is not a model score.",
+            ),
+            TimelinePoint(
+                "extent",
+                "Observed flood extent",
+                None,
+                None,
+                None,
+                "awaiting_model_data",
+                "Historical flood extent ingestion pending. No Global Flood Database raster is in the repository.",
+            ),
         ]
     points = []
     for index, value in enumerate(pipeline.get("daily_means", []), start=1):
@@ -289,15 +342,60 @@ def _diagnostics(pipeline: dict[str, Any] | None) -> dict[str, Any]:
     }
 
 
+def _archived_events(config: dict[str, Any]) -> list[dict[str, Any]]:
+    items = []
+    for event in config.get("archived_events", []):
+        items.append({
+            "id": event["id"],
+            "name": event["name"],
+            "region": event.get("region"),
+            "official_source": event.get("official_source"),
+            "official_url": event.get("official_url"),
+            "status": event.get("status", "archived"),
+            "active": False,
+            "note": event.get("note", "Not the active demonstration."),
+        })
+    return items
+
+
 def _sources(config: dict[str, Any]) -> list[DataSource]:
     datasets = config["datasets"]
     rain = datasets["precipitation"]
     dem = datasets["dem"]
     truth = datasets["ground_truth"]
     return [
+        DataSource(
+            "gfd-modis",
+            "historical flood extent",
+            truth["name"],
+            truth["url"],
+            truth["spatial_resolution"],
+            "event product",
+            "awaiting_model_data",
+            "Preferred validation source. Raster not ingested. DFO event id not retrieved.",
+        ),
+        DataSource(
+            "modis",
+            "satellite for that flood extent",
+            truth.get("satellite", "Terra and Aqua MODIS"),
+            truth["url"],
+            truth["spatial_resolution"],
+            "event windows, not a live feed",
+            "awaiting_model_data",
+            "Configured satellite for the planned extent. Not ingested. Sentinel-1/2 are not used for this event.",
+        ),
         DataSource("chirps-v3-sat", "rainfall", rain["name"], rain["info_url"], rain["spatial_resolution"], rain["temporal_resolution"], "awaiting_model_data", "Planned source. Not downloaded."),
         DataSource("cop-dem-glo30", "elevation", dem["name"], dem["url"], dem["spatial_resolution"], dem["temporal_resolution"], "awaiting_model_data", "Planned source. Not downloaded."),
-        DataSource("emsr517", "flood extent", truth["name"], truth["url"], truth["spatial_resolution"], "event product", "awaiting_model_data", "Validation source. Not downloaded."),
+        DataSource(
+            "boundaries",
+            "administrative boundaries",
+            "Not configured",
+            "",
+            "not loaded",
+            "not loaded",
+            "unavailable",
+            "No boundary dataset has been loaded.",
+        ),
         DataSource(
             "prithvi-input",
             "flood segmentation input",
@@ -306,7 +404,7 @@ def _sources(config: dict[str, Any]) -> list[DataSource]:
             "model expects six optical bands",
             "not a live feed",
             "unavailable",
-            "Third-party IBM/NASA model. Not run on the selected region.",
+            "Third-party IBM/NASA model. Not run on the selected region. Not a 2008 data source.",
         ),
     ]
 

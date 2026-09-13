@@ -13,7 +13,7 @@ def learning_modules() -> list[LearningModule]:
             "A flood is water covering land that is usually dry.",
             [
                 {"heading": "River floods", "body": "A river rises out of its channel after prolonged rain or snowmelt. Water spreads across the floodplain."},
-                {"heading": "Flash floods", "body": "Intense rain, often in steep terrain, produces a fast rise. The Ahr Valley 2021 event is this kind of valley flood."},
+                {"heading": "Flash floods", "body": "Intense rain, often in steep terrain, produces a fast rise. The active case is not a flash-flood example; it is the 2008 Kosi embankment failure."},
                 {"heading": "Urban floods", "body": "Drainage cannot carry rain away, so streets and basements flood even away from a major river."},
                 {"heading": "Coastal floods", "body": "Storm surge, high tide, or a tsunami pushes sea water inland. SobekAI is not configured for coastal surge."},
             ],
@@ -24,8 +24,9 @@ def learning_modules() -> list[LearningModule]:
             "Satellites do not stream a live video of a river. They revisit on a schedule.",
             [
                 {"heading": "Satellite imagery", "body": "Each pass records a grid of measurements. A later pass is a new observation, not a continuous feed."},
-                {"heading": "Sentinel-1", "body": "C-band radar. It can see through clouds, which matters during storms. Revisit over Europe is about 6 days with two satellites."},
-                {"heading": "Sentinel-2", "body": "Optical imaging. Useful for water indices when the sky is clear. Clouds hide the ground."},
+                {"heading": "Sentinel-1", "body": "C-band radar. It can see through clouds. It was not operating in August 2008 and is not a source for the Kosi event."},
+                {"heading": "Sentinel-2", "body": "Optical imaging. Useful for water indices when the sky is clear. Clouds hide the ground. It is not used for the 2008 event."},
+                {"heading": "MODIS", "body": "The planned validation source, the Global Flood Database, uses Terra and Aqua MODIS at 250 m. That raster has not been ingested."},
                 {"heading": "Resolution and revisit", "body": "Resolution is the size of one pixel. Revisit is how often a new pixel is acquired. Neither is instant."},
             ],
         ),
@@ -74,7 +75,7 @@ def learning_modules() -> list[LearningModule]:
             "A historical event is the test, not a random split of the same pixels.",
             [
                 {"heading": "Steps", "body": "Take observations from before the peak. Produce a risk map. Retrieve the later official flood extent. Compare. Metrics are computed only after that comparison exists."},
-                {"heading": "Status", "body": "IoU, precision, recall, F1, and AUROC are evaluation pending until the official EMS extent is ingested. The current sample comparison is synthetic."},
+                {"heading": "Status", "body": "IoU, precision, recall, F1, and AUROC are evaluation pending. The planned comparison is a pre-event SobekAI risk map against the Global Flood Database extent for the 2008 Kosi flood. Neither product is ingested."},
             ],
         ),
         LearningModule(
@@ -103,7 +104,18 @@ def learning_modules() -> list[LearningModule]:
             "SobekAI does not replace official emergency authorities.",
             [
                 {"heading": "General guidance", "body": "Know the local warning service, avoid flooded roads, and move to higher ground if officials say so. This page is education, not an evacuation order."},
-                {"heading": "Authority", "body": "For the Ahr Valley event, official mapping came from Copernicus EMS. Follow the competent civil-protection authority, not this prototype."},
+                {"heading": "Authority", "body": "SobekAI does not replace the competent civil-protection authority in Bihar or India. This prototype is not an official warning."},
+            ],
+        ),
+        LearningModule(
+            "kosi-case",
+            "Case study: the Kosi flood",
+            "The active historical event is the August 2008 Kosi flood in Bihar, India.",
+            [
+                {"heading": "Where", "body": "Bihar is a state in eastern India. The Kosi, also spelled Koshi, is a transboundary river. It enters the plains at the Koshi Barrage, 26.5263 N, 86.9269 E, on the Nepal side of the border near Birpur."},
+                {"heading": "Why the region floods", "body": "The river has shifted across its alluvial fan and is often called the Sorrow of Bihar. On 18 August 2008 the eastern embankment failed near Kusaha, Nepal, about 13 km upstream of the barrage. Public accounts name flooding in Supaul, Araria, Saharsa, Madhepura, Purnia, Khagaria, and Bhagalpur."},
+                {"heading": "What satellites can show", "body": "A later clear or radar observation can map where water covered land. The configured source for that map is the Global Flood Database, built from Terra and Aqua MODIS at 250 m. That raster is not in this repository, so no flood polygon is drawn."},
+                {"heading": "How SobekAI would use it", "body": "The intended test is a risk map from observations before the breach, compared with the later mapped extent. That comparison has not been run. Dashboard scores are awaiting model data. They are not a renamed German sample."},
             ],
         ),
     ]

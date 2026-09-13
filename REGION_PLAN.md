@@ -1,7 +1,9 @@
 # Region Plan — One Hazard, One Place
 
 **Hazard:** flood.  
-**Recommended event:** Ahr Valley, Germany, 14–15 July 2021 (Copernicus EMSR517 AOI15).  
+**Active demonstration (updated):** Kosi / Koshi Flood, Bihar, India, August 2008. The Germany section below is an archived candidate, not the running demo.
+
+**Earlier recommended event:** Ahr Valley, Germany, 14–15 July 2021 (Copernicus EMSR517 AOI15).  
 **Status:** recommendation only. Confirm before any real download or model training.
 
 Three candidates were compared against hackathon constraints: public ground truth, satellite coverage, compact compute, and a map judges can read in ten seconds.

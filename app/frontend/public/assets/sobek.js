@@ -4,6 +4,8 @@ const SobekAI = (() => {
     ["risk-map", "/risk-map", "Risk Map", "map"],
     ["history", "/history", "Flood History", "clock"],
     ["alerts", "/alerts", "Warnings", "alert"],
+    ["emergency", "/emergency", "Emergency Help", "pin"],
+    ["simulation", "/simulation", "Simulation", "cpu"],
     ["learn", "/learn", "Flood Academy", "book"],
     ["methodology", "/methodology", "Data & Methodology", "layers"],
   ];
@@ -54,9 +56,9 @@ const SobekAI = (() => {
         <div class="top-actions">
           <input class="search" id="site-search" type="search" placeholder="Search" aria-label="Search this page">
           <div class="pill" title="${escapeAttr(state.disclaimer)}">
-            <span class="dot"></span>
-            <b>HISTORICAL MODE</b>
-            <small>Satellite-based early-warning prototype</small>
+            <span class="dot ${active === "simulation" || active === "history" || active === "risk-map" ? "" : "idle"}"></span>
+            <b>${active === "simulation" || active === "history" || active === "risk-map" ? "SCENARIO SIMULATOR" : "LIVE MONITOR"}</b>
+            <small>${active === "simulation" || active === "history" || active === "risk-map" ? "Historical replay · not live" : "Delhi, India · no live satellite feed"}</small>
             ${demo}
           </div>
           <div class="profile-wrap">
@@ -101,6 +103,7 @@ const SobekAI = (() => {
       rainfall: "Rainfall",
       elevation: "Elevation",
       boundaries: "Administrative boundaries",
+      rivers: "Rivers",
     }[key] || key;
   }
 
@@ -122,6 +125,12 @@ const SobekAI = (() => {
       maxZoom: 17,
       attribution: "&copy; OpenStreetMap",
     }).addTo(map);
+    const anchor = state.region.anchor;
+    if (anchor && anchor.lat != null && anchor.lon != null) {
+      L.circleMarker([anchor.lat, anchor.lon], {
+        radius: 6, color: "#35D6D0", weight: 2, fillColor: "#35D6D0", fillOpacity: 0.85,
+      }).bindTooltip(anchor.name || "Koshi Barrage").addTo(map);
+    }
     const overlays = {};
     if (state.layers.predicted_risk.enabled) {
       overlays.predicted_risk = L.imageOverlay("/risk_overlay.png", bounds, { opacity: 0.85 }).addTo(map);
@@ -233,6 +242,7 @@ const SobekAI = (() => {
     const root = document.getElementById("app");
     try {
       const state = await load();
+      root.classList.remove("boot");
       root.innerHTML = chrome(page, state);
       const workspace = document.getElementById("workspace");
       workspace.innerHTML = document.getElementById("page-template").innerHTML + footer(state);
@@ -252,7 +262,9 @@ const SobekAI = (() => {
     document.querySelectorAll("[data-text]").forEach((node) => {
       node.textContent = lookup(state, node.dataset.text) ?? "Awaiting model data";
     });
-    if (page === "dashboard") hydrateDashboard(state);
+    if (page === "dashboard") hydrateLive(state);
+    if (page === "simulation") hydrateSimulation(state);
+    if (page === "emergency") hydrateEmergency(state);
     if (page === "risk-map") hydrateRiskMap(state);
     if (page === "history") hydrateHistory(state);
     if (page === "alerts") hydrateAlerts(state);
@@ -277,22 +289,27 @@ const SobekAI = (() => {
     const layers = document.getElementById("layers");
     if (layers) layers.innerHTML = Object.entries(state.layers).map(([key, layer]) => layerButton(key, layer)).join("");
     const event = state.event;
+    const dateLine = event.end_date ? `${event.start_date} — ${event.end_date}` : `${event.start_date || "Date not retrieved"}`;
     document.getElementById("event-card").innerHTML = `<p class="label">Selected event</p>
       <div class="event">
         <div class="event-still">No historical image ingested</div>
         <div>
-          <h2>${event.name}</h2>
-          <p>${event.region}</p>
-          <p>${event.start_date} — ${event.end_date}</p>
-          <p>Status: not scored</p>
+          <h2>Kosi flood — Bihar, India</h2>
+          <p>Event: ${event.name}</p>
+          <p>Region: ${event.region}</p>
+          <p>River: ${event.river || "Kosi / Koshi"}</p>
+          <p>Date: ${dateLine}</p>
+          <p>Status: ${event.status_label || "Historical event"}</p>
+          <p>Severity: ${event.severity_label || "Not scored"}</p>
         </div>
         <a class="arrow" href="/history" aria-label="Open flood history">→</a>
-      </div>`;
+      </div>
+      <p class="meta">${event.note || ""}</p>`;
     document.getElementById("distribution").innerHTML = renderDistribution(state.distribution);
     document.getElementById("inspect").innerHTML = `<h2>Zone intelligence</h2><p>Click the map. ${state.attribution.note}</p>`;
     const timeline = document.getElementById("timeline");
     if (timeline) {
-      timeline.innerHTML = `<div class="panel-head"><h2>Risk timeline</h2></div>${renderTimeline(state.timeline)}<p class="meta">${timelineNote(state)}</p>`;
+      timeline.innerHTML = `<div class="panel-head"><h2>Kosi flood timeline</h2></div>${renderTimeline(state.timeline)}<p class="meta">${timelineNote(state)}</p>`;
     }
     document.getElementById("source-card").innerHTML = renderSources(state);
     document.getElementById("engine-card").innerHTML = renderEngine(state);
@@ -331,7 +348,7 @@ const SobekAI = (() => {
 
   function timelineNote(state) {
     const labeled = (state.timeline || []).some((point) => String(point.label).startsWith("T-"));
-    if (!labeled) return "Sample-day means are not assigned to T-48h, T-24h, T-12h, T0, or EVENT. Those stages stay unfilled until the model timeline is connected.";
+    if (!labeled) return "Only dated public facts are shown. Pre-event risk build-up is not shown because no observation series has been ingested.";
     return "Lead-time stages are present without scores. Risk progression is not fabricated.";
   }
 
@@ -344,17 +361,36 @@ const SobekAI = (() => {
 
   function hydrateHistory(state) {
     const event = state.event;
-    document.getElementById("events").innerHTML = `<article class="card panel">
-      <p class="label">${event.validation_status}</p>
-      <h2>${event.name}</h2>
-      <p>${event.region}</p>
-      <p>${event.start_date} — ${event.end_date}</p>
-      <p>Severity: not scored</p>
-      <p>Source: ${event.data_sources.join(", ")}</p>
-      <p>Satellite: ${event.satellite_source}</p>
-      <p>${event.note}</p>
-      <p><a class="btn" href="#event-detail">View event →</a></p>
-    </article>`;
+    const archived = (state.archived_events || []).map((item) => `<article class="card panel">
+      <p class="label">${item.status}</p>
+      <h2>${item.name}</h2>
+      <p>${item.region}</p>
+      <p>Not the active demonstration.</p>
+      <p>${item.note}</p>
+    </article>`).join("");
+    const links = (event.supporting_sources || []).map((source) =>
+      `<li><a href="${source.url}">${source.name}</a></li>`
+    ).join("");
+    const scenarios = state.scenarios || [];
+    const scenarioCards = scenarios.map((item) => `<article class="card panel">
+      <p class="label">India · historical</p>
+      <h2>${item.display}</h2>
+      <p>${item.region}</p>
+      <p>${item.start_date || "Date not retrieved"}</p>
+      <p>${item.flood_type}</p>
+      <p>Satellite: ${item.availability.satellite}</p>
+      <p>Flood extent: ${item.availability.flood_extent}</p>
+      <p><a class="btn" href="/simulation?scenario=${item.id}">Open scenario →</a></p>
+    </article>`).join("");
+    document.getElementById("events").innerHTML = scenarioCards + archived;
+    const sources = document.getElementById("event-sources");
+    if (sources) {
+      sources.innerHTML = `<h2>Data sources</h2><p><a href="${event.official_url}">${event.data_sources[0]}</a></p><ul class="source-list">${links}</ul><p class="meta">A source is listed here only when it is configured. Extent rasters, rainfall, and the DEM are not ingested.</p>`;
+    }
+    const prediction = document.getElementById("prediction-vs-actual");
+    if (prediction) {
+      prediction.innerHTML = `<div class="empty">SobekAI predicted risk: awaiting model data. No risk grid has been produced for this event.</div><div class="empty">Actual Kosi flood extent: historical flood extent ingestion pending.</div>`;
+    }
     document.getElementById("metrics").textContent = state.metrics.note;
     const timeline = document.getElementById("timeline");
     if (timeline) timeline.innerHTML = renderTimeline(state.timeline);
@@ -363,7 +399,7 @@ const SobekAI = (() => {
   function hydrateAlerts(state) {
     const body = document.getElementById("alerts");
     if (!state.alerts.length) {
-      body.innerHTML = `<div class="empty">Awaiting model data. No operational warnings have been issued.</div>`;
+      body.innerHTML = `<div class="empty">No live official alert data connected. SobekAI is not issuing a warning.</div>`;
       return;
     }
     body.innerHTML = `<div class="warn">${state.alerts.map((alert) => {
@@ -409,6 +445,331 @@ const SobekAI = (() => {
 
   function escapeAttr(value) {
     return String(value).replaceAll('"', "&quot;");
+  }
+
+  function delhi(state) {
+    return state.live_location || {
+      display: "Delhi, India",
+      district: "New Delhi",
+      lat: 28.6139,
+      lon: 77.2090,
+      source: "Fixed product location. Not browser geolocation.",
+      river_context: "Delhi flood operations track the Yamuna. No live gauge reading is connected.",
+    };
+  }
+
+  function modeSwitch(active) {
+    return `<div class="modes" role="tablist">
+      <a class="${active === "live" ? "on" : ""}" href="/">Live monitor</a>
+      <a class="${active === "sim" ? "on" : ""}" href="/simulation">Scenario simulator</a>
+    </div>
+    <p class="meta">${active === "live" ? "This is not a live satellite feed." : "Historical replay. Not live."}</p>`;
+  }
+
+  function unavailable(title, note) {
+    return `<section class="panel"><h2>${title}</h2><p class="meta">Data unavailable</p><p>${note}</p></section>`;
+  }
+
+  function hydrateLive(state) {
+    const root = document.getElementById("live-root");
+    if (!root) return;
+    localStorage.removeItem("sobek-place");
+    const place = delhi(state);
+    root.innerHTML = liveMarkup(place, state.emergency_contacts || []);
+    if (window.L) mountPlaceMap(place);
+  }
+
+  function contactRows(contacts) {
+    if (!contacts.length) return "<p>No published contacts loaded.</p>";
+    return contacts.map((item) => `<div class="contact">
+      <div><b>${item.role}</b><p class="meta">${item.scope}</p></div>
+      <a class="btn" href="${item.tel}">Call ${item.number}</a>
+    </div>`).join("");
+  }
+
+  function liveMarkup(place, contacts) {
+    return `${modeSwitch("live")}
+      <section class="panel">
+        <p class="label">Current location</p>
+        <h2>${place.display}</h2>
+        <div class="kv">
+          <span>District</span><b>${place.district}</b>
+          <span>Anchor</span><b>${place.lat.toFixed(4)}, ${place.lon.toFixed(4)}</b>
+        </div>
+        <p class="meta">${place.source} ${place.anchor || ""}</p>
+      </section>
+      <section class="live-grid">
+        <section class="panel risk-hero">
+          <p class="label">Current flood risk · Delhi</p>
+          <h2>Data unavailable</h2>
+          <p>No live risk score is connected for Delhi.</p>
+          <div class="kv">
+            <span>Next 6 hours</span><b>Data unavailable</b>
+            <span>Next 24 hours</span><b>Data unavailable</b>
+            <span>Next 72 hours</span><b>Data unavailable</b>
+            <span>Trend</span><b>Data unavailable</b>
+          </div>
+        </section>
+        ${unavailable("Risk contributors", "Rainfall, Yamuna level, satellite water extent, terrain, and historical susceptibility are not connected for Delhi.")}
+        ${unavailable("Active warnings", "No live official alert feed is connected for Delhi. Published helplines are listed under Emergency help.")}
+        ${unavailable("Flood risk trend", "No Delhi time series is connected. A simulated trend is not drawn.")}
+      </section>
+      <section class="panel map-panel">
+        <div class="panel-head"><h2>Delhi</h2></div>
+        <div class="map-frame short"><div id="live-map"></div></div>
+        <p class="meta">Fixed on Delhi. Flood-risk, flood-extent, shelter, hospital, and road layers are not connected.</p>
+      </section>
+      <section class="live-grid">
+        <section class="panel">
+          <h2>Emergency help · Delhi</h2>
+          ${contactRows(contacts)}
+          <p class="meta">Numbers are published directory contacts, not live availability. Navigate is unavailable because no facility locations are loaded.</p>
+        </section>
+        ${unavailable("Nearest help", "No Delhi hospital, shelter, relief-camp, police-station, or fire-station dataset is connected.")}
+        ${unavailable("Travel advisory", "Destination is within Delhi. No road-flood dataset is connected, so route risk is not estimated.")}
+        ${unavailable("Flood impact", "Delhi affected-area, population, and infrastructure counts are not available.")}
+        <section class="panel">
+          <h2>Data status · Delhi</h2>
+          <div class="kv">
+            <span>Satellite</span><b>Not connected</b>
+            <span>Rainfall</span><b>Not connected</b>
+            <span>Yamuna level</span><b>Not connected</b>
+            <span>Terrain</span><b>Not connected</b>
+            <span>Official alerts</span><b>Not connected</b>
+            <span>Published helplines</span><b>Listed</b>
+            <span>Last updated</span><b>No observation timestamp</b>
+          </div>
+        </section>
+        <section class="panel">
+          <h2>Sobek AI insight</h2>
+          <p>No explanation is generated for Delhi. ${place.river_context}</p>
+          <p class="meta">${place.river_source_name ? `<a href="${place.river_source_url}">${place.river_source_name}</a>` : ""}</p>
+        </section>
+      </section>`;
+  }
+
+  function mountPlaceMap(place) {
+    const node = document.getElementById("live-map");
+    if (!node || node.dataset.ready) return;
+    const map = L.map(node).setView([place.lat, place.lon], 11);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 17, attribution: "&copy; OpenStreetMap" }).addTo(map);
+    L.circleMarker([place.lat, place.lon], { radius: 7, color: "#35D6D0", fillOpacity: 0.9 })
+      .bindTooltip("Delhi").addTo(map);
+    node.dataset.ready = "1";
+    setTimeout(() => map.invalidateSize(), 150);
+  }
+
+  function hydrateSimulation(state) {
+    const root = document.getElementById("sim-root");
+    if (!root) return;
+    const scenarios = state.scenarios || [];
+    const requested = new URLSearchParams(location.search).get("scenario");
+    const selected = scenarios.find((item) => item.id === requested) || scenarios.find((item) => item.default) || scenarios[0];
+    root.innerHTML = `${modeSwitch("sim")}
+      <p class="eyebrow">Historical replay</p>
+      <h1>Flood scenario <em>simulator</em></h1>
+      <p class="lede">Replay historical flood conditions and evaluate SobekAI's spatial risk response.</p>
+      <section class="panel">
+        <label>Select historical scenario
+          <select id="scenario-select">${scenarios.map((item) => `<option value="${item.id}" ${item.id === selected.id ? "selected" : ""}>${item.display}</option>`).join("")}</select>
+        </label>
+        <div id="scenario-meta"></div>
+        <button class="btn" id="run-sim" type="button">Run SobekAI simulation</button>
+        <div id="sim-status"></div>
+      </section>
+      <section class="panel map-panel">
+        <div class="panel-head"><h2>Scenario map</h2></div>
+        <div class="map-frame"><div id="sim-map"></div></div>
+        <div class="legend" id="sim-legend"></div>
+      </section>
+      <section id="sim-result"></section>`;
+    const select = document.getElementById("scenario-select");
+    const paint = (id) => {
+      const scenario = scenarios.find((item) => item.id === id) || selected;
+      paintScenario(scenario);
+      history.replaceState(null, "", `/simulation?scenario=${scenario.id}`);
+    };
+    select.onchange = () => paint(select.value);
+    document.getElementById("run-sim").onclick = () => runScenario(scenarios.find((item) => item.id === select.value));
+    paint(selected.id);
+  }
+
+  function flag(value) {
+    if (!value || value === "unavailable") return "Unavailable";
+    if (value === "available") return "Available";
+    return value;
+  }
+
+  function paintScenario(scenario) {
+    const pack = scenario.package;
+    const signals = pack ? pack.signals : null;
+    document.getElementById("scenario-meta").innerHTML = `<div class="kv">
+      <span>Event</span><b>${scenario.name}</b>
+      <span>Country</span><b>${scenario.country}</b>
+      <span>Region</span><b>${scenario.region}</b>
+      <span>Year</span><b>${scenario.year || "—"}</b>
+      <span>Hazard</span><b>Flood</b>
+      <span>Mode</span><b>Historical simulation</b>
+      <span>Date</span><b>${scenario.start_date || "Not retrieved"}</b>
+      <span>Sentinel-1</span><b>${flag(scenario.availability.satellite)}</b>
+      <span>Rainfall</span><b>${flag(scenario.availability.rainfall)}</b>
+      <span>DEM</span><b>${flag(scenario.availability.terrain)}</b>
+      <span>Flood-extent raster</span><b>${flag(scenario.availability.flood_extent)}</b>
+      <span>Visual maps</span><b>${flag(scenario.availability.visual_maps)}</b>
+      <span>Parameter mode</span><b>Historical. No user-simulated values.</b>
+    </div>
+    ${signals ? `<h3>Environmental signals</h3><div class="kv">
+      <span>Satellite water</span><b>Data unavailable</b>
+      <span>Rainfall</span><b>Data unavailable</b>
+      <span>Elevation</span><b>Data unavailable</b>
+      <span>Slope</span><b>Data unavailable</b>
+      <span>Temporal change</span><b>Data unavailable</b>
+      <span>River</span><b>Unavailable</b>
+    </div>` : ""}
+    <p class="meta">${scenario.date_note}</p><p class="meta">${scenario.bbox_note}</p>`;
+    mountScenarioMap(scenario);
+    document.getElementById("sim-result").innerHTML = "";
+    document.getElementById("sim-status").innerHTML = "";
+  }
+
+  function mountScenarioMap(scenario) {
+    const node = document.getElementById("sim-map");
+    if (!node || !window.L) return;
+    if (node._sobekMap) node._sobekMap.remove();
+    const pack = scenario.package || {};
+    const places = [...(pack.affected_places || []), ...(pack.unmapped_places || [])];
+    const map = L.map(node);
+    node._sobekMap = map;
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 17, attribution: "&copy; OpenStreetMap" }).addTo(map);
+    const affected = L.layerGroup();
+    const unmapped = L.layerGroup();
+    (pack.affected_places || []).forEach((place) => {
+      const marker = L.circleMarker([place.lat, place.lon], { radius: 8, color: "#EF4444", fillColor: "#EF4444", fillOpacity: 0.9 });
+      marker.bindPopup(placePopup(place));
+      marker.addTo(affected);
+    });
+    (pack.unmapped_places || []).forEach((place) => {
+      L.circleMarker([place.lat, place.lon], { radius: 6, color: "#94B1B6", fillColor: "#66858B", fillOpacity: 0.85 })
+        .bindTooltip(`${place.name}: not in the supplied maps. Not certified safe.`)
+        .addTo(unmapped);
+    });
+    affected.addTo(map);
+    unmapped.addTo(map);
+    if (places.length) {
+      map.fitBounds(places.map((place) => [place.lat, place.lon]), { padding: [28, 28] });
+    } else {
+      const box = scenario.bbox;
+      map.fitBounds([[box.min_lat, box.min_lon], [box.max_lat, box.max_lon]]);
+      if (scenario.center) {
+        L.circleMarker([scenario.center.lat, scenario.center.lon], { radius: 6, color: "#35D6D0", fillOpacity: 0.9 })
+          .bindTooltip(scenario.center.label).addTo(map);
+      }
+    }
+    const legend = document.getElementById("sim-legend");
+    if (legend) {
+      legend.innerHTML = places.length
+        ? `<span><i class="swatch" style="background:#EF4444"></i>Supplied map: affected, access constrained</span>
+           <span><i class="swatch" style="background:#66858B"></i>Not in the supplied maps. Not certified safe.</span>`
+        : `<span>No place layer for this scenario.</span>`;
+    }
+    setTimeout(() => map.invalidateSize(), 150);
+  }
+
+  function placePopup(place) {
+    return `<strong>${place.name}</strong><br>${place.district || ""}, ${place.state}<br>Affected on the supplied visual map. Access constrained.<br><span>Not an official closure. Not a flood polygon.</span>`;
+  }
+
+  function runScenario(scenario) {
+    const status = document.getElementById("sim-status");
+    const pack = scenario.package;
+    if (!pack) {
+      status.innerHTML = `<ol class="status-list">
+        <li>Satellite observations: Not connected</li>
+        <li>Rainfall: Not connected</li>
+        <li>Terrain: Not connected</li>
+        <li>Historical flood extent: Not connected</li>
+        <li>Spatial risk: Not run</li>
+      </ol><p class="meta">Nothing was inferred. No checkmarks are shown for missing inputs.</p>`;
+      document.getElementById("sim-result").innerHTML = `<section class="panel"><h2>${scenario.display}</h2><p>Risk score: not available for this scenario.</p></section>`;
+      return;
+    }
+    const rasters = pack.rasters || [];
+    status.innerHTML = `<p class="label">Pipeline status</p><ol class="status-list">
+      <li>Loading supplied visual maps: loaded. These are visual references, not raw satellite products.</li>
+      ${rasters.map((item) => `<li>${item.id.replaceAll("_", " ")}: ${item.status === "available" ? "file present" : "not connected"}</li>`).join("")}
+      <li>Spatial risk model: not run. Required rasters are missing.</li>
+      <li>Model versus actual: not calculated.</li>
+    </ol><p class="meta">This is not a live inference and not a precomputed risk analysis. Missing steps were not marked complete.</p>`;
+    const affected = pack.affected_places || [];
+    const unmapped = pack.unmapped_places || [];
+    const visuals = pack.visual_references || [];
+    document.getElementById("sim-result").innerHTML = `<section class="panel">
+      <p class="label">Simulation result · historical</p>
+      <h2>${scenario.display}</h2>
+      <div class="kv">
+        <span>Risk score</span><b>Not available</b>
+        <span>Risk level</span><b>Not available</b>
+        <span>IoU / precision / recall / F1</span><b>Not available</b>
+        <span>Reason</span><b>${pack.metrics.reason}</b>
+        <span>Lead time</span><b>Lead time unavailable for this dataset.</b>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Supplied affected places</h2>
+      <p class="meta">Red places have a supplied inundation map. Gray places are not on those maps. Gray is not a safe-area certificate, and it is not drawn in the low-risk green.</p>
+      <div class="place-grid">${affected.map((place) => `<article>
+        <img src="${place.image}" alt="${place.name} visual map">
+        <h3>${place.name}${place.state === "Assam" ? "" : " · " + place.state}</h3>
+        <p>Affected on the supplied map. Access constrained.</p>
+        <p class="meta">${place.access_note}</p>
+        <p class="meta">${place.anchor_source}</p>
+      </article>`).join("")}</div>
+    </section>
+    <section class="panel">
+      <h2>Not in the supplied maps</h2>
+      <div class="kv">${unmapped.map((place) => `<span>${place.name}</span><b>Not certified safe</b>`).join("")}</div>
+    </section>
+    <section class="panel">
+      <h2>Before-flood visuals</h2>
+      <p class="meta">Dates, sensors, and bounds were not readable from these files. They are not shown as Sentinel-1 products.</p>
+      <div class="place-grid">${visuals.map((item) => `<article>
+        <img src="${item.file}" alt="${item.original_name}">
+        <h3>${item.original_name}</h3>
+        <p class="meta">${item.note}</p>
+      </article>`).join("")}</div>
+    </section>
+    <section class="panel">
+      <h2>Why is the risk high?</h2>
+      <p>A risk explanation is not generated. Satellite water, rainfall, terrain, and temporal change are not connected, so the risk engine did not score these cells.</p>
+      <p class="meta">The supplied maps show inundation at the named places. That is a visual observation, not a causal claim from the model.</p>
+    </section>`;
+  }
+
+  function hydrateEmergency(state) {
+    const root = document.getElementById("help-root");
+    if (!root) return;
+    const place = delhi(state);
+    const contacts = state.emergency_contacts || [];
+    root.innerHTML = `<p class="eyebrow">Decision support · ${place.display}</p>
+      <h1>Emergency <em>help</em></h1>
+      <p class="lede">Published numbers for the fixed Delhi location. Facility locations are not connected, so View and Navigate are not offered.</p>
+      <section class="panel">
+        ${contacts.map((item) => `<article class="contact-card">
+          <h2>${item.role}</h2>
+          <div class="kv">
+            <span>Number</span><b>${item.number}</b>
+            <span>Scope</span><b>${item.scope}</b>
+            <span>Source</span><b><a href="${item.source_url}">${item.source_name}</a></b>
+          </div>
+          <p><a class="btn" href="${item.tel}">Call</a></p>
+        </article>`).join("")}
+        <p class="meta">These are directory contacts. They are not a live status of ambulances, stations, or control rooms.</p>
+      </section>
+      <section class="panel">
+        <h2>Nearest help in Delhi</h2>
+        <p>No hospital, shelter, relief-camp, police-station, or fire-station dataset is connected.</p>
+        <p class="meta">Show on map is unavailable until a location layer exists.</p>
+      </section>`;
   }
 
   return { boot };

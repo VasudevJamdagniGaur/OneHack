@@ -17,33 +17,69 @@ project:
     satellite-derived products, not a live satellite downlink.
 
 region:
-  id: ahr_valley_de
-  name: Ahr Valley
-  country: Germany
-  admin: Rhineland-Palatinate
+  id: kosi_bihar
+  name: Kosi River Basin
+  country: India
+  state: Bihar
+  admin: Bihar
+  river: Kosi / Koshi
+  # Viewing frame for the Kosi fan in northern Bihar, anchored on the Koshi
+  # Barrage. Not a Global Flood Database flood polygon.
   bbox:
-    min_lon: 6.85
-    min_lat: 50.45
-    max_lon: 7.25
-    max_lat: 50.62
+    min_lon: 86.20
+    min_lat: 25.20
+    max_lon: 87.60
+    max_lat: 26.70
   center:
-    lon: 7.05
-    lat: 50.54
+    lon: 86.9269
+    lat: 26.5263
+  anchor:
+    name: Koshi Barrage
+    lon: 86.9269
+    lat: 26.5263
+    source: https://en.wikipedia.org/wiki/Koshi_Barrage
   crs: EPSG:4326
+  bbox_note: >
+    Approximate viewing frame around the Koshi Barrage (26.5263 N, 86.9269 E)
+    and the northern Bihar districts named in public accounts of the 2008
+    flood. This is not an ingested flood extent.
 
 event:
-  id: emsr517_aoi15
-  name: July 2021 Western Germany floods
-  official_source: Copernicus EMS Rapid Mapping EMSR517
-  official_url: https://mapping.emergency.copernicus.eu/activations/EMSR517/
-  activation_time_utc: "2021-07-13T17:11:00Z"
-  peak_start: "2021-07-14"
-  peak_end: "2021-07-15"
-  ground_truth_product: EMSR517 AOI15 Bad Neuenahr-Ahrweiler delineation
-  ground_truth_delivery: "2021-07-16"
+  id: kosi_bihar_2008
+  name: Kosi / Koshi Flood
+  country: India
+  state: Bihar
+  region: Kosi River Basin
+  river: Kosi / Koshi
+  year: 2008
+  official_source: Global Flood Database
+  official_url: https://developers.google.com/earth-engine/datasets/catalog/GLOBAL_FLOOD_DB_MODIS_EVENTS_V1
+  peak_start: "2008-08-18"
+  peak_end: null
+  status_label: Historical event
+  date_note: >
+    The embankment breach is dated 18 August 2008 in public accounts
+    (GFDRR; Wikipedia summary of the event). The Global Flood Database
+    event start and end dates have not been retrieved. No end date is shown.
   notes: >
-    CEMS was activated on 13 July because a severe flood was expected.
-    Peak flooding in the Ahr valley occurred 14-15 July 2021.
+    Active demonstration event. August 2008 Kosi embankment-collapse flood
+    in northern Bihar. Flood-extent raster is not ingested.
+  supporting_sources:
+    - name: Tellman et al. 2021, Nature
+      url: https://doi.org/10.1038/s41586-021-03695-w
+    - name: GFDRR note on the 18 August 2008 Kosi embankment breach
+      url: https://www.gfdrr.org/en/india-2008-needs-assessment-undertaken-after-kosi-floods-bihar-affected-33-million-people
+
+archived_events:
+  - id: emsr517_aoi15
+    name: July 2021 Western Germany floods
+    region: Ahr Valley, Germany
+    official_source: Copernicus EMS Rapid Mapping EMSR517
+    official_url: https://mapping.emergency.copernicus.eu/activations/EMSR517/
+    status: archived
+    note: >
+      Not the active demonstration. Extent vectors are not loaded.
+      Synthetic sample scores from that valley are not shown.
 
 paths:
   raw_dir: data/raw
@@ -58,22 +94,22 @@ grid:
   sample_cols: 64
 
 temporal:
-  feature_start: "2021-07-01"
-  feature_end: "2021-07-15"
-  prediction_date: "2021-07-13"   # day before / at onset; used for early-warning demo
-  validation_date: "2021-07-16"   # official flood-extent product date
-  sample_days: 7
+  feature_start: null
+  feature_end: null
+  prediction_date: null
+  validation_date: null
+  sample_days: 7          # isolated synthetic generator only; not shown as the Kosi timeline
   split:
     strategy: event_holdout
-    train: "Do not train on Ahr valley flood-extent labels from this event."
-    validation: "Optional: other EMSR517 AOIs (e.g. Erftstadt) if a supervised model is added later."
-    test: "Ahr Valley EMSR517 AOI15 flood extent vs 13 July risk map."
+    train: "Do not train on the Kosi flood-extent map that will be used for validation."
+    validation: "Not configured. Do not add other Indian events until a real dataset is ingested."
+    test: "Kosi / Bihar 2008 Global Flood Database extent vs a pre-event SobekAI risk map. Neither is ingested."
 
 datasets:
   precipitation:
     name: CHIRPS v3.0 daily SAT
     official_source: UCSB Climate Hazards Center
-    url: https://data.chc.ucsb.edu/products/CHIRPS/v3.0/daily/final/sat/2021/
+    url: https://data.chc.ucsb.edu/products/CHIRPS/v3.0/daily/final/sat/2008/
     info_url: https://www.chc.ucsb.edu/data/chirps3
     satellite_inputs: Thermal infrared + NASA IMERG Late V07 daily disaggregation
     spatial_resolution: 0.05 deg (~5 km)
@@ -97,20 +133,23 @@ datasets:
       url: https://doi.org/10.5067/MEASURES/SRTM/SRTMGL1.003
       spatial_resolution: 1 arc-second (~30 m)
   ground_truth:
-    name: Copernicus EMSR517 flood delineation
-    official_source: Copernicus Emergency Management Service
-    url: https://mapping.emergency.copernicus.eu/activations/EMSR517/
-    product: vector flood extent (observedEvent)
-    aoi: AOI15 Bad Neuenahr-Ahrweiler
-    spatial_resolution: event-scale polygons from satellite delineation
+    name: Global Flood Database MODIS flood extent
+    official_source: Cloud to Street and Dartmouth Flood Observatory
+    url: https://developers.google.com/earth-engine/datasets/catalog/GLOBAL_FLOOD_DB_MODIS_EVENTS_V1
+    product: flooded and duration bands for one DFO event
+    satellite: Terra and Aqua MODIS
+    spatial_resolution: 250 m
     used_as: validation_only
+    status: not_ingested
+    note: >
+      Preferred historical flood-extent source for this event.
+      The specific Kosi/Bihar raster and DFO event id have not been retrieved.
   optional_later:
     sentinel1:
       name: Sentinel-1 GRD IW VV/VH
       url: https://dataspace.copernicus.eu/
       spatial_resolution: 10 m
-      revisit_days: "6 days with two-satellite constellation over Europe"
-      role: "During-event water mapping, not the primary pre-event risk driver."
+      role: "Not used for the 2008 event. Sentinel-1 was not operating in August 2008."
 
 features:
   enabled:

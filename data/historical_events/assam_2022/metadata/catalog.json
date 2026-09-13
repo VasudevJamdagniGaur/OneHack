@@ -1,0 +1,270 @@
+{
+  "id": "assam-2022",
+  "classification": "historical",
+  "mode": "historical_simulation",
+  "hazard": "flood",
+  "note": "Archived public replay. Not a live satellite feed. Supplied images are visual references, not raw satellite products.",
+  "expected_rasters": [
+    {
+      "id": "pre_flood_water",
+      "path": "data/historical_events/assam_2022/satellite/pre_flood/",
+      "role": "satellite_water",
+      "status": "unavailable"
+    },
+    {
+      "id": "flood_period_water",
+      "path": "data/historical_events/assam_2022/satellite/flood_period/",
+      "role": "satellite_water",
+      "status": "unavailable"
+    },
+    {
+      "id": "water_change",
+      "path": "data/historical_events/assam_2022/satellite/",
+      "role": "satellite_change",
+      "status": "unavailable"
+    },
+    {
+      "id": "flood_probability",
+      "path": "data/historical_events/assam_2022/satellite/",
+      "role": "segmentation",
+      "status": "unavailable"
+    },
+    {
+      "id": "rainfall",
+      "path": "data/historical_events/assam_2022/rainfall/",
+      "role": "rainfall",
+      "status": "unavailable"
+    },
+    {
+      "id": "terrain",
+      "path": "data/historical_events/assam_2022/terrain/",
+      "role": "terrain",
+      "status": "unavailable"
+    },
+    {
+      "id": "flood_extent",
+      "path": "data/historical_events/assam_2022/flood_extent/",
+      "role": "flood_extent",
+      "status": "unavailable"
+    },
+    {
+      "id": "risk_score",
+      "path": "data/historical_events/assam_2022/risk/",
+      "role": "risk_grid",
+      "status": "unavailable"
+    }
+  ],
+  "visual_references": [
+    {
+      "id": "pre-vap001",
+      "file": "/assets/assam/pre-vap001.jpg",
+      "original_name": "VAP001.jpg",
+      "role": "pre_flood_visual",
+      "classification": "visual_reference",
+      "satellite": "not stated on the file",
+      "acquisition": null,
+      "note": "Supplied as a before-flood visual. Acquisition date, sensor, and bounds were not readable from the file, so it is not treated as a raw satellite product."
+    },
+    {
+      "id": "pre-vap002",
+      "file": "/assets/assam/pre-vap002.jpg",
+      "original_name": "VAP002.jpg",
+      "role": "pre_flood_visual",
+      "classification": "visual_reference",
+      "satellite": "not stated on the file",
+      "acquisition": null,
+      "note": "Supplied as a before-flood visual. Acquisition date, sensor, and bounds were not readable from the file."
+    },
+    {
+      "id": "pre-detech1",
+      "file": "/assets/assam/pre-detech1.jpg",
+      "original_name": "DETECH1.jpg",
+      "role": "pre_flood_visual",
+      "classification": "visual_reference",
+      "satellite": "not stated on the file",
+      "acquisition": null,
+      "note": "Supplied as a before-flood visual. Acquisition date, sensor, and bounds were not readable from the file."
+    }
+  ],
+  "affected_places": [
+    {
+      "id": "barkandoli",
+      "name": "Barkandoli",
+      "also_named": "Barkhandoli",
+      "state": "Assam",
+      "district": "Nagaon",
+      "lat": 26.359,
+      "lon": 92.6735,
+      "anchor_source": "Village directory listing for Barkandoli Grant No. 1 (26.3590 N, 92.6735 E). Place anchor, not a flood polygon.",
+      "image": "/assets/assam/barkandoli.jpg",
+      "status": "affected",
+      "access": "constrained",
+      "access_note": "The supplied map shows red inundation near this place. Treat access as constrained. This is not an official road-closure notice."
+    },
+    {
+      "id": "hojai",
+      "name": "Hojai",
+      "state": "Assam",
+      "district": "Hojai",
+      "lat": 26.0031,
+      "lon": 92.856,
+      "anchor_source": "Town center for Hojai. Place anchor, not a flood polygon.",
+      "image": "/assets/assam/hojai.jpg",
+      "status": "affected",
+      "access": "constrained",
+      "access_note": "The supplied map shows red inundation west and south of the Hojai labels. Treat access as constrained. This is not an official road-closure notice."
+    },
+    {
+      "id": "jhargaon",
+      "name": "Jhargaon",
+      "state": "Assam",
+      "district": "Morigaon",
+      "lat": 26.252134,
+      "lon": 92.342369,
+      "anchor_source": "Pin-code directory for Jhargaon, Morigaon (26.252134 N, 92.342369 E). A second directory lists a different point, so this pin is approximate.",
+      "image": "/assets/assam/jhargaon.jpg",
+      "status": "affected",
+      "access": "constrained",
+      "access_note": "The supplied map shows red inundation. Treat access as constrained. This is not an official road-closure notice."
+    },
+    {
+      "id": "kampur",
+      "name": "Kampur",
+      "state": "Assam",
+      "district": "Nagaon",
+      "lat": 26.1818,
+      "lon": 92.6513,
+      "anchor_source": "GeoNames-style town coordinate for Kampur, Nagaon (26.1818 N, 92.6513 E). A pin-code directory lists a nearby different point.",
+      "image": "/assets/assam/kampur.jpg",
+      "status": "affected",
+      "access": "constrained",
+      "access_note": "The supplied map shows red inundation. Treat access as constrained. This is not an official road-closure notice."
+    },
+    {
+      "id": "kanakpur",
+      "name": "Kanakpur",
+      "state": "Assam",
+      "district": "Cachar",
+      "lat": 24.8206,
+      "lon": 92.7471,
+      "anchor_source": "Pin-code directory for Kanakpur, Cachar (24.8206 N, 92.7471 E). Place anchor, not a flood polygon.",
+      "image": "/assets/assam/kanakpur.jpg",
+      "status": "affected",
+      "access": "constrained",
+      "access_note": "The supplied map shows red inundation. Treat access as constrained. This is not an official road-closure notice."
+    },
+    {
+      "id": "pailapool",
+      "name": "Pailapool",
+      "state": "Assam",
+      "district": "Cachar",
+      "lat": 24.817043,
+      "lon": 93.014975,
+      "anchor_source": "Village listing for Pailapool, Lakhipur, Cachar (24.817043 N, 93.014975 E). Place anchor, not a flood polygon.",
+      "image": "/assets/assam/pailapool.jpg",
+      "status": "affected",
+      "access": "constrained",
+      "access_note": "The supplied map shows red inundation. Treat access as constrained. This is not an official road-closure notice."
+    },
+    {
+      "id": "silchar",
+      "name": "Silchar",
+      "state": "Assam",
+      "district": "Cachar",
+      "lat": 24.8333,
+      "lon": 92.7789,
+      "anchor_source": "Town center for Silchar. Place anchor, not a flood polygon.",
+      "image": "/assets/assam/silchar.jpg",
+      "status": "affected",
+      "access": "constrained",
+      "access_note": "The supplied map shows red inundation along Silchar Bypass and west of the built-up area. Treat access as constrained. This is not an official road-closure notice."
+    },
+    {
+      "id": "sivasagar",
+      "name": "Sivasagar",
+      "state": "Assam",
+      "district": "Sivasagar",
+      "lat": 26.9841,
+      "lon": 94.6376,
+      "anchor_source": "Town center for Sivasagar. Place anchor, not a flood polygon.",
+      "image": "/assets/assam/sivasagar.jpg",
+      "status": "affected",
+      "access": "constrained",
+      "access_note": "The supplied map shows red inundation. Treat access as constrained. This is not an official road-closure notice."
+    },
+    {
+      "id": "jiribam",
+      "name": "Jiribam",
+      "also_named": "Jiriban",
+      "state": "Manipur",
+      "district": "Jiribam",
+      "lat": 24.808,
+      "lon": 93.12,
+      "anchor_source": "Town anchor for Jiribam, Manipur. The supplied file is named Jiriban. This place is outside Assam.",
+      "image": "/assets/assam/jiribam.jpg",
+      "status": "affected",
+      "access": "constrained",
+      "access_note": "The supplied map shows red inundation. Treat access as constrained. This is not an official road-closure notice."
+    },
+    {
+      "id": "imphal",
+      "name": "Imphal",
+      "state": "Manipur",
+      "district": "Imphal",
+      "lat": 24.817,
+      "lon": 93.9368,
+      "anchor_source": "Town center for Imphal, Manipur. Outside Assam. Included because a visual map was supplied.",
+      "image": "/assets/assam/imphal.jpg",
+      "status": "affected",
+      "access": "constrained",
+      "access_note": "The supplied map shows red inundation. Treat access as constrained. This is not an official road-closure notice."
+    }
+  ],
+  "unmapped_places": [
+    {
+      "id": "guwahati",
+      "name": "Guwahati",
+      "state": "Assam",
+      "lat": 26.1445,
+      "lon": 91.7362,
+      "status": "unmapped",
+      "note": "Not in the supplied inundation maps. Not certified safe."
+    },
+    {
+      "id": "dibrugarh",
+      "name": "Dibrugarh",
+      "state": "Assam",
+      "lat": 27.4728,
+      "lon": 94.912,
+      "status": "unmapped",
+      "note": "Not in the supplied inundation maps. Not certified safe."
+    },
+    {
+      "id": "jorhat",
+      "name": "Jorhat",
+      "state": "Assam",
+      "lat": 26.7509,
+      "lon": 94.2037,
+      "status": "unmapped",
+      "note": "Not in the supplied inundation maps. Not certified safe."
+    },
+    {
+      "id": "tezpur",
+      "name": "Tezpur",
+      "state": "Assam",
+      "lat": 26.6338,
+      "lon": 92.8005,
+      "status": "unmapped",
+      "note": "Not in the supplied inundation maps. Not certified safe."
+    },
+    {
+      "id": "dhubri",
+      "name": "Dhubri",
+      "state": "Assam",
+      "lat": 26.0207,
+      "lon": 89.9743,
+      "status": "unmapped",
+      "note": "Not in the supplied inundation maps. Not certified safe."
+    }
+  ]
+}

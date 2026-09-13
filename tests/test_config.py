@@ -13,10 +13,12 @@ def test_project_is_historical_replay(config):
     assert config["model"]["trained"] is False
 
 
-def test_region_and_event_are_ahr_2021(config):
-    assert config["region"]["id"] == "ahr_valley_de"
-    assert config["event"]["id"] == "emsr517_aoi15"
-    assert config["temporal"]["prediction_date"] == "2021-07-13"
+def test_region_and_event_are_kosi_2008(config):
+    assert config["region"]["id"] == "kosi_bihar"
+    assert config["region"]["country"] == "India"
+    assert config["event"]["id"] == "kosi_bihar_2008"
+    assert config["event"]["peak_start"] == "2008-08-18"
+    assert config["temporal"]["prediction_date"] is None
 
 
 def test_paths_resolve_inside_repo(config):

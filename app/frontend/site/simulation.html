@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SobekAI · Simulation</title>
+  <link rel="icon" type="image/png" href="/assets/sobek-mark.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="/assets/sobek.css">
+</head>
+<body>
+  <video class="bg-video" autoplay muted loop playsinline poster="/assets/sobek-bg-poster.jpg" aria-hidden="true">
+    <source src="/assets/sobek-bg.mp4" type="video/mp4">
+  </video>
+  <script src="/assets/sobek-bg.js"></script>
+  <div class="bg-shade" aria-hidden="true"></div>
+  <div id="app" class="boot"><img class="logo" src="/assets/sobek-logo.png" alt="SobekAI"><p>Loading flood intelligence…</p></div>
+  <template id="page-template">
+    <main class="page">
+      <div id="sim-root"></div>
+    </main>
+  </template>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/assets/sobek.js"></script>
+  <script>SobekAI.boot("simulation");</script>
+</body>
+</html>

@@ -1,4 +1,6 @@
-"""Synthetic Ahr-like valley used only until real rasters are confirmed.
+"""Synthetic valley used only by tests and the sample script.
+
+This is not the active Kosi / Bihar demonstration and must not be drawn on that map.
 
 Everything produced here must be labeled SYNTHETIC SAMPLE DATA.
 """

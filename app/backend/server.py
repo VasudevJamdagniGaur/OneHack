@@ -1,7 +1,7 @@
 """Local demo server for the flood early-warning dashboard.
 
-Not a live satellite feed. Sample risk maps are synthetic.
-The Prithvi panel is the official India example chip, not the Ahr Valley event.
+Not a live satellite feed. The active event is the 2008 Kosi flood in Bihar.
+The synthetic sample grid is not painted onto that map.
 """
 
 from __future__ import annotations
@@ -20,14 +20,12 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from app.api.services import (
     build_state,
-    inspect_cell,
     predictions_payload,
     regions_payload,
     risk_map_payload,
 )
 from app.content.learn import learning_modules
 from flood_ai.config import load_config, project_root, resolve_path
-from flood_ai.pipeline import run_sample_pipeline
 
 HOST = "127.0.0.1"
 PORT = 8080
@@ -38,6 +36,8 @@ ROUTES = {
     "/risk-map": "risk-map.html",
     "/history": "history.html",
     "/alerts": "alerts.html",
+    "/emergency": "emergency.html",
+    "/simulation": "simulation.html",
     "/learn": "learn.html",
     "/methodology": "methodology.html",
 }
@@ -46,22 +46,19 @@ STATE: dict = {}
 
 def prepare_public() -> dict:
     PUBLIC.mkdir(parents=True, exist_ok=True)
-    result = run_sample_pipeline()
-    config = result["config"]
-    stack = result["stack"]
-    risk = result["risk_cube"][result["prediction_day"]]
-
-    _save_rgba(_risk_rgba(risk), PUBLIC / "risk_overlay.png")
-    _save_rgba(_flood_rgba(stack["actual_flood"]), PUBLIC / "flood_overlay.png")
-    payload = _dashboard_payload(result, config)
-    (PUBLIC / "dashboard.json").write_text(json.dumps(payload), encoding="utf-8")
-    _save_prithvi_preview(PUBLIC / "prithvi_example.png")
-    state = build_state(config, _pipeline_summary(result, config))
+    config = load_config()
+    # The sample pipeline is an Ahr-like synthetic valley. Do not place it on Bihar.
+    for name in ("risk_overlay.png", "flood_overlay.png"):
+        stale = PUBLIC / name
+        if stale.exists():
+            stale.unlink()
+    state = build_state(config, pipeline=None)
     STATE.clear()
     STATE.update(state)
     (PUBLIC / "app_state.json").write_text(json.dumps(state), encoding="utf-8")
+    _save_prithvi_preview(PUBLIC / "prithvi_example.png")
     _copy_site()
-    return payload
+    return state
 
 
 def _pipeline_summary(result: dict, config: dict) -> dict:
@@ -180,8 +177,8 @@ class Handler(SimpleHTTPRequestHandler):
         elif path == "/api/risk-map":
             body = risk_map_payload(state)
         elif path == "/api/history":
-            body = {"events": [state["event"]]}
-        elif path == "/api/history/emsr517_aoi15":
+            body = {"events": [state["event"]], "archived_events": state.get("archived_events", [])}
+        elif path == f"/api/history/{state['event']['id']}":
             body = state["event"]
         elif path == "/api/alerts":
             body = {"alerts": state["alerts"], "note": "No operational alerts."}
@@ -189,13 +186,17 @@ class Handler(SimpleHTTPRequestHandler):
             body = state["metrics"]
         elif path == "/api/data-sources":
             body = {"sources": state["data_sources"]}
+        elif path == "/api/scenarios":
+            body = {"scenarios": state.get("scenarios", []), "default": "kosi-2008"}
         elif path == "/api/learn":
             body = {"modules": [module.to_dict() for module in learning_modules()]}
         elif path == "/api/risk-map/inspect":
             query = self.path.split("?", 1)[1] if "?" in self.path else ""
             params = dict(part.split("=", 1) for part in query.split("&") if "=" in part)
-            samples = project_root() / "data" / "samples" / "grid_cells.csv"
-            body = inspect_cell(samples, float(params.get("lat", "0")), float(params.get("lon", "0")))
+            body = {
+                "status": "awaiting_model_data",
+                "note": "Feature attribution unavailable. No Kosi risk grid has been produced.",
+            }
         else:
             self.send_error(404, "Unknown SobekAI endpoint")
             return
@@ -208,7 +209,7 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 def main() -> None:
-    print("Building dashboard from the sample pipeline...", flush=True)
+    print("Loading Kosi / Bihar historical configuration. No synthetic risk overlay.", flush=True)
     prepare_public()
     server = ThreadingHTTPServer((HOST, PORT), Handler)
     print(f"Dashboard: http://{HOST}:{PORT}", flush=True)
