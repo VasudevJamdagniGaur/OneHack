@@ -7,7 +7,8 @@ from pathlib import Path
 from typing import Any
 
 from app.content.learn import learning_modules
-from app.content.live_location import emergency_contacts, live_location
+from app.content.live_location import emergency_contacts, live_location, nearest_help
+from app.content.risk_factors import delhi_demo_risk
 from app.content.scenarios import flood_scenarios
 from app.shared.models import (
     Alert,
@@ -53,6 +54,8 @@ def build_state(config: dict[str, Any], pipeline: dict[str, Any] | None = None) 
         "scenarios": flood_scenarios(),
         "live_location": live_location(),
         "emergency_contacts": emergency_contacts(),
+        "nearest_help": nearest_help(),
+        "flood_risk_factors": delhi_demo_risk(),
         "mode": {
             "live": "Live monitor. Not a live satellite feed. No real-time hazard feed is connected.",
             "simulator": "Scenario simulator. Historical replay. Not live.",

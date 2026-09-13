@@ -23,6 +23,72 @@ def live_location() -> dict[str, Any]:
     }
 
 
+def nearest_help() -> dict[str, Any]:
+    origin = "Netaji Subhas University of Technology, Sector 3, Dwarka, New Delhi"
+    return {
+        "based_on": "NSUT, Sector 3, Dwarka",
+        "origin": origin,
+        "places": [
+            {
+                "id": "venkateshwar",
+                "name": "Venkateshwar Super Speciality Hospital",
+                "detail": "Sector 18, Dwarka",
+                "kind": "hospital",
+                "action": "navigate",
+                "query": "Venkateshwar Hospital, Sector 18A, Dwarka, New Delhi",
+                "source_name": "Venkateshwar Hospital",
+                "source_url": "https://www.venkateshwarhospitals.com/contact-us.php",
+            },
+            {
+                "id": "dwarka-north-ps",
+                "name": "Police Station Dwarka North",
+                "detail": "Sector 17, Dwarka",
+                "kind": "police",
+                "action": "navigate",
+                "query": "Dwarka North Police Station, Sector 17, Dwarka, New Delhi",
+                "source_name": "District South West police list",
+                "source_url": "https://dmsouthwest.delhi.gov.in/police/",
+            },
+            {
+                "id": "dwarka-fire",
+                "name": "Fire Station Dwarka",
+                "detail": "Sector 6, Dwarka",
+                "kind": "fire",
+                "action": "navigate",
+                "query": "Fire Station Dwarka, Sector 6, Dwarka, New Delhi",
+            },
+            {
+                "id": "rain-basera",
+                "name": "Rain Basera",
+                "detail": "Sector 12, Dwarka",
+                "kind": "shelter",
+                "action": "view",
+                "query": "Rain Basera, Sector 12, Dwarka, New Delhi",
+            },
+            {
+                "id": "emergency-112",
+                "name": "Emergency",
+                "detail": "112",
+                "kind": "emergency",
+                "action": "call",
+                "tel": "tel:112",
+                "source_name": "Emergency Response Support System",
+                "source_url": "https://112.gov.in/",
+            },
+            {
+                "id": "nsut-support",
+                "name": "NSUT Campus Support",
+                "detail": "011-2509-9017",
+                "kind": "campus",
+                "action": "call",
+                "tel": "tel:+911125099017",
+                "source_name": "NSUT contact page",
+                "source_url": "http://www.nsut.ac.in/index.php/en/contact-us",
+            },
+        ],
+    }
+
+
 def emergency_contacts() -> list[dict[str, Any]]:
     """Published Delhi and national numbers only. No facility coordinates."""
     return [

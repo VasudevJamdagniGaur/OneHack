@@ -54,6 +54,114 @@
       "status": "unavailable"
     }
   ],
+  "simulation_factors": {
+    "groups": [
+      {
+        "id": "dynamic",
+        "title": "Dynamic flood signals",
+        "factor_ids": [
+          "satellite_water_extent",
+          "water_extent_change",
+          "rainfall",
+          "river_condition",
+          "temporal_trend"
+        ]
+      },
+      {
+        "id": "susceptibility",
+        "title": "Flood susceptibility",
+        "factor_ids": [
+          "elevation",
+          "slope",
+          "land_cover",
+          "historical_flood"
+        ]
+      }
+    ],
+    "factors": [
+      {
+        "id": "satellite_water_extent",
+        "name": "Satellite Water Extent",
+        "group": "dynamic",
+        "display": "0.82 / 1.00",
+        "status": "CRITICAL",
+        "source_type": "SIMULATED",
+        "tooltip": "Simulation reading for the Assam 2022 replay."
+      },
+      {
+        "id": "water_extent_change",
+        "name": "Water Extent Change",
+        "group": "dynamic",
+        "display": "+46.7% · RISING",
+        "status": "CRITICAL",
+        "source_type": "SIMULATED",
+        "tooltip": "Simulation reading for the Assam 2022 replay."
+      },
+      {
+        "id": "rainfall",
+        "name": "Rainfall",
+        "group": "dynamic",
+        "display": "168 mm / 24h",
+        "status": "HIGH",
+        "source_type": "SIMULATED",
+        "tooltip": "Simulation reading for the Assam 2022 replay."
+      },
+      {
+        "id": "river_condition",
+        "name": "River Condition",
+        "group": "dynamic",
+        "display": "0.88 / 1.00",
+        "status": "CRITICAL",
+        "source_type": "SIMULATED",
+        "tooltip": "Simulation reading for the Assam 2022 replay."
+      },
+      {
+        "id": "temporal_trend",
+        "name": "Temporal Risk Trend",
+        "group": "dynamic",
+        "display": "RAPIDLY RISING",
+        "status": "CRITICAL",
+        "source_type": "SIMULATED",
+        "tooltip": "Simulation reading for the Assam 2022 replay."
+      },
+      {
+        "id": "elevation",
+        "name": "Elevation Susceptibility",
+        "group": "susceptibility",
+        "display": "0.84 / 1.00",
+        "status": "HIGH",
+        "source_type": "SIMULATED",
+        "tooltip": "Simulation reading for the Assam 2022 replay."
+      },
+      {
+        "id": "slope",
+        "name": "Slope Susceptibility",
+        "group": "susceptibility",
+        "display": "0.68 / 1.00",
+        "status": "MODERATE",
+        "source_type": "SIMULATED",
+        "tooltip": "Simulation reading for the Assam 2022 replay."
+      },
+      {
+        "id": "land_cover",
+        "name": "Land-Cover Susceptibility",
+        "group": "susceptibility",
+        "display": "0.77 / 1.00",
+        "status": "HIGH",
+        "source_type": "SIMULATED",
+        "tooltip": "Simulation reading for the Assam 2022 replay."
+      },
+      {
+        "id": "historical_flood",
+        "name": "Historical Flood Susceptibility",
+        "group": "susceptibility",
+        "display": "0.91 / 1.00",
+        "status": "CRITICAL",
+        "source_type": "SIMULATED",
+        "tooltip": "Simulation reading for the Assam 2022 replay."
+      }
+    ]
+  },
   "visual_references": [
     {
       "id": "pre-vap001",

@@ -60,7 +60,24 @@ def test_live_monitor_is_fixed_on_delhi():
     assert place["district"] == "New Delhi"
     assert place["classification"] == "selected"
     assert state["emergency_contacts"][0]["number"] == "112"
+    help_places = state["nearest_help"]["places"]
+    assert state["nearest_help"]["based_on"] == "NSUT, Sector 3, Dwarka"
+    assert help_places[0]["name"].startswith("Venkateshwar")
+    assert help_places[-1]["detail"] == "011-2509-9017"
     assert all(item["source_url"].startswith("http") for item in state["emergency_contacts"])
+
+
+def test_delhi_demo_factors_are_labeled_simulated():
+    state = build_state(load_config(), pipeline=None)
+    demo = state["flood_risk_factors"]
+    assert demo["source_type"] == "SIMULATED"
+    assert demo["live_connected"] is False
+    assert demo["overall"]["score"] == 18
+    assert demo["overall"]["status"] == "LOW"
+    assert len(demo["factors"]) == 9
+    assert {item["source_type"] for item in demo["factors"]} == {"SIMULATED"}
+    assert "DEMO MODE" not in demo["banner"]
+    assert demo["banner"] == "AI-SIMULATED READINGS"
 
 
 def test_assam_package_does_not_invent_a_risk_grid():
@@ -68,6 +85,11 @@ def test_assam_package_does_not_invent_a_risk_grid():
     assam = next(item for item in state["scenarios"] if item["id"] == "assam-2022")
     assert assam["availability"]["visual_maps"] == "available"
     assert assam["availability"]["satellite"] == "unavailable"
+    readings = {item["name"]: item for item in assam["package"]["signals"]["factors"]}
+    assert readings["Rainfall"]["display"] == "168 mm / 24h"
+    assert readings["Rainfall"]["status"] == "HIGH"
+    assert readings["Slope Susceptibility"]["status"] == "MODERATE"
+    assert readings["Historical Flood Susceptibility"]["status"] == "CRITICAL"
     assert assam["availability"]["risk_grid"] == "unavailable"
     assert assam["package"]["risk_score"] is None
     assert assam["package"]["metrics"]["iou"] is None

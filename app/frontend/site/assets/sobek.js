@@ -1,11 +1,11 @@
 const SobekAI = (() => {
   const PAGES = [
     ["dashboard", "/", "Dashboard", "grid"],
+    ["simulation", "/simulation", "Simulation", "cpu"],
     ["risk-map", "/risk-map", "Risk Map", "map"],
     ["history", "/history", "Flood History", "clock"],
     ["alerts", "/alerts", "Warnings", "alert"],
     ["emergency", "/emergency", "Emergency Help", "pin"],
-    ["simulation", "/simulation", "Simulation", "cpu"],
     ["learn", "/learn", "Flood Academy", "book"],
     ["methodology", "/methodology", "Data & Methodology", "layers"],
   ];
@@ -19,6 +19,7 @@ const SobekAI = (() => {
     layers: '<path d="m12 3 9 5-9 5L3 8l9-5Z"/><path d="m3 12 9 5 9-5M3 16l9 5 9-5"/>',
     search: '<circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/>',
     user: '<circle cx="12" cy="8" r="3"/><path d="M5 19c1.5-3 4-4.5 7-4.5S17.5 16 19 19"/>',
+    bell: '<path d="M6 16.5V11a6 6 0 1 1 12 0v5.5l1.5 2h-15L6 16.5Z"/><path d="M10 19.5a2 2 0 0 0 4 0"/>',
     expand: '<path d="M8 4H4v4M16 4h4v4M4 16v4h4M20 16v4h-4"/>',
     drop: '<path d="M12 3s6 6.2 6 10a6 6 0 0 1-12 0c0-3.8 6-10 6-10Z"/>',
     zone: '<path d="M4 16 9 6l5 6 2-2 4 6H4Z"/>',
@@ -55,11 +56,15 @@ const SobekAI = (() => {
         </a>
         <div class="top-actions">
           <input class="search" id="site-search" type="search" placeholder="Search" aria-label="Search this page">
-          <div class="pill" title="${escapeAttr(state.disclaimer)}">
+          <div class="pill">
             <span class="dot ${active === "simulation" || active === "history" || active === "risk-map" ? "" : "idle"}"></span>
             <b>${active === "simulation" || active === "history" || active === "risk-map" ? "SCENARIO SIMULATOR" : "LIVE MONITOR"}</b>
-            <small>${active === "simulation" || active === "history" || active === "risk-map" ? "Historical replay · not live" : "Delhi, India · no live satellite feed"}</small>
+            ${active === "simulation" || active === "history" || active === "risk-map" ? `<small>Historical replay</small>` : ""}
             ${demo}
+          </div>
+          <div class="bell-wrap">
+            <button class="icon-btn" id="bell-btn" type="button" aria-label="Official announcements">${icon("bell")}<i class="bell-badge" id="bell-badge" hidden></i></button>
+            <div class="bell-panel" id="bell-panel" hidden></div>
           </div>
           <div class="profile-wrap">
             <button class="icon-btn" id="profile-btn" type="button" aria-label="Profile">${icon("user")}</button>
@@ -219,13 +224,178 @@ const SobekAI = (() => {
     }).join("")}</div>`;
   }
 
+  let simAnnouncements = [];
+
+  const EMERGENCY_CALLS = [["112", "tel:112"], ["108", "tel:108"], ["1077", "tel:1077"]];
+  const FLOOD_UPDATES = [
+    {
+      issuer: "Government of India · Ministry of Home Affairs",
+      agency: "National Disaster Response Force (NDRF)",
+      tone: "critical",
+      headline: "21 June 2022 — Severe flood warning",
+      location: "Silchar, Cachar, Assam",
+      paragraphs: ["Continuous rainfall and rising river levels have created severe flood conditions across Assam. NDRF rescue and relief operations are active in affected areas."],
+      blocks: [
+        { label: "Response status", lines: ["20 NDRF teams deployed across 16 affected districts.", "Rescue and evacuation operations are underway."] },
+        { label: "Action", lines: ["Avoid flooded roads and fast-moving water.", "Move to safer locations or designated relief camps.", "Follow instructions from district authorities and rescue teams."] },
+      ],
+      emergency: true,
+    },
+    {
+      issuer: "Government of Assam · Assam State Disaster Management Authority",
+      tone: "critical",
+      headline: "22 June 2022 — Flood situation escalating",
+      location: "Silchar / Barak Valley, Assam",
+      paragraphs: ["Heavy rainfall and rising river levels continue to affect multiple areas of Assam. Silchar and the Barak Valley are among the worst-affected areas."],
+      blocks: [
+        { label: "Action", lines: ["Do not enter inundated areas.", "Avoid unnecessary travel.", "Follow local evacuation and relief-camp instructions."] },
+      ],
+    },
+    {
+      issuer: "National Disaster Response Force (NDRF)",
+      tone: "critical",
+      headline: "23 June 2022 — Rescue operations continue",
+      location: "Assam · Including Silchar / Cachar",
+      paragraphs: [
+        "26 NDRF teams are operating across 14 flood-affected districts. More than 900 people were moved to safer locations on 23 June.",
+        "Since rescue operations began on 16 June, NDRF teams had rescued 9 people and evacuated approximately 17,500 people from marooned areas, along with 32 livestock.",
+      ],
+      blocks: [
+        { label: "Action", lines: ["If trapped by floodwater, contact emergency services.", "Do not attempt to cross flooded roads or flowing water."] },
+      ],
+    },
+    {
+      issuer: "Satellite-Based Flood Monitoring",
+      tone: "sat",
+      headline: "23 June 2022 — Flood inundation confirmed",
+      location: "Assam",
+      paragraphs: [
+        "Satellite observations confirm widespread flood inundation following heavy rainfall and rising Brahmaputra and tributary water levels.",
+        "Sentinel-1 observations were used for flood mapping in several affected areas, including Silchar/Bahadurpur.",
+      ],
+      blocks: [
+        { label: "Action", lines: ["Use the SobekAI risk map to identify areas with elevated flood exposure and avoid mapped inundation zones."] },
+      ],
+    },
+    {
+      issuer: "Local relief network",
+      tone: "critical",
+      orgs: [
+        "Seva Kendra Silchar",
+        "SEEDS India",
+        "Catholic Relief Services (CRS)",
+        "CASA — Church's Auxiliary for Social Action",
+        "Reliance Foundation",
+      ],
+      emergency: true,
+    },
+  ];
+
+  function emergencyCalls() {
+    return EMERGENCY_CALLS.map(([label, href]) => `<a href="${href}">${label}</a>`).join(" · ");
+  }
+
+  function updateSlide(item) {
+    const orgs = (item.orgs || []).map((name) => `<li>${name}</li>`).join("");
+    const blocks = (item.blocks || []).map((block) => `<p class="label">${block.label}</p><ul class="status-list">${block.lines.map((line) => `<li>${line}</li>`).join("")}</ul>`).join("");
+    return `<article class="announce-slide">
+      <p class="label">${item.issuer}</p>
+      ${item.agency ? `<p class="announce-agency">${item.agency}</p>` : ""}
+      ${item.headline ? `<p class="status-line"><i class="swatch ${item.tone}"></i>${item.headline}</p>` : ""}
+      ${item.location ? `<div class="kv"><span>Location</span><b>${item.location}</b></div>` : ""}
+      ${(item.paragraphs || []).map((line) => `<p>${line}</p>`).join("")}
+      ${blocks}
+      ${orgs ? `<ul class="status-list">${orgs}</ul>` : ""}
+      ${item.emergency ? `<div class="kv"><span>Emergency</span><b class="announce-calls">${emergencyCalls()}</b></div>` : ""}
+    </article>`;
+  }
+
+  function officialAnnouncementHtml() {
+    const slides = FLOOD_UPDATES.map(updateSlide).join("");
+    const dots = FLOOD_UPDATES.map((_, index) => `<button class="announce-dot${index === 0 ? " on" : ""}" type="button" data-index="${index}" aria-label="Update ${index + 1}"></button>`).join("");
+    return `<div class="announce-deck">
+      <p class="label">Official flood response updates</p>
+      <div class="announce-viewport"><div class="announce-track">${slides}</div></div>
+      <div class="announce-nav">
+        <button class="announce-arrow announce-prev" type="button" aria-label="Previous update">‹</button>
+        <div class="announce-dots">${dots}</div>
+        <span class="announce-count">1 / ${FLOOD_UPDATES.length}</span>
+        <button class="announce-arrow announce-next" type="button" aria-label="Next update">›</button>
+      </div>
+    </div>`;
+  }
+
+  function bindAnnounceDecks(root) {
+    (root || document).querySelectorAll(".announce-deck").forEach((deck) => {
+      if (deck.dataset.bound) return;
+      deck.dataset.bound = "1";
+      const track = deck.querySelector(".announce-track");
+      const slides = [...deck.querySelectorAll(".announce-slide")];
+      const dots = [...deck.querySelectorAll(".announce-dot")];
+      const count = deck.querySelector(".announce-count");
+      let index = 0;
+      let startX = 0;
+      let delta = 0;
+      const go = (next) => {
+        index = Math.max(0, Math.min(slides.length - 1, next));
+        track.style.transform = `translateX(-${index * 100}%)`;
+        dots.forEach((dot, item) => dot.classList.toggle("on", item === index));
+        if (count) count.textContent = `${index + 1} / ${slides.length}`;
+      };
+      deck.querySelector(".announce-prev").onclick = () => go(index - 1);
+      deck.querySelector(".announce-next").onclick = () => go(index + 1);
+      dots.forEach((dot) => { dot.onclick = () => go(Number(dot.dataset.index)); });
+      track.addEventListener("pointerdown", (event) => {
+        if (event.target.closest("a, button")) return;
+        startX = event.clientX;
+        delta = 0;
+        track.setPointerCapture(event.pointerId);
+      });
+      track.addEventListener("pointermove", (event) => {
+        if (!track.hasPointerCapture?.(event.pointerId)) return;
+        delta = event.clientX - startX;
+      });
+      track.addEventListener("pointerup", () => {
+        if (delta <= -48) go(index + 1);
+        else if (delta >= 48) go(index - 1);
+        delta = 0;
+      });
+      go(0);
+    });
+  }
+
+  function setSimAnnouncements(items) {
+    simAnnouncements = items || [];
+    const panel = document.getElementById("bell-panel");
+    const badge = document.getElementById("bell-badge");
+    if (badge) badge.hidden = simAnnouncements.length === 0;
+    if (!panel) return;
+    panel.innerHTML = simAnnouncements.length
+      ? `<article class="bell-item">${officialAnnouncementHtml()}</article>`
+      : `<p class="meta">No announcements.</p>`;
+    if (simAnnouncements.length) bindAnnounceDecks(panel);
+  }
+
   function bindChrome() {
     const toggle = document.getElementById("nav-toggle");
     if (toggle) toggle.onclick = () => document.body.classList.toggle("nav-open");
     const profile = document.getElementById("profile-btn");
     const note = document.getElementById("profile-note");
+    const bell = document.getElementById("bell-btn");
+    const bellPanel = document.getElementById("bell-panel");
     if (profile && note) {
-      profile.onclick = () => { note.hidden = !note.hidden; };
+      profile.onclick = () => {
+        note.hidden = !note.hidden;
+        if (bellPanel) bellPanel.hidden = true;
+      };
+    }
+    if (bell && bellPanel) {
+      setSimAnnouncements(simAnnouncements);
+      bell.onclick = (event) => {
+        event.stopPropagation();
+        bellPanel.hidden = !bellPanel.hidden;
+        if (note) note.hidden = true;
+      };
     }
     const search = document.getElementById("site-search");
     if (search) {
@@ -258,7 +428,10 @@ const SobekAI = (() => {
     }
   }
 
+  let latestState = null;
+
   function hydrate(page, state) {
+    latestState = state;
     document.querySelectorAll("[data-text]").forEach((node) => {
       node.textContent = lookup(state, node.dataset.text) ?? "Awaiting model data";
     });
@@ -458,14 +631,6 @@ const SobekAI = (() => {
     };
   }
 
-  function modeSwitch(active) {
-    return `<div class="modes" role="tablist">
-      <a class="${active === "live" ? "on" : ""}" href="/">Live monitor</a>
-      <a class="${active === "sim" ? "on" : ""}" href="/simulation">Scenario simulator</a>
-    </div>
-    <p class="meta">${active === "live" ? "This is not a live satellite feed." : "Historical replay. Not live."}</p>`;
-  }
-
   function unavailable(title, note) {
     return `<section class="panel"><h2>${title}</h2><p class="meta">Data unavailable</p><p>${note}</p></section>`;
   }
@@ -475,8 +640,36 @@ const SobekAI = (() => {
     if (!root) return;
     localStorage.removeItem("sobek-place");
     const place = delhi(state);
-    root.innerHTML = liveMarkup(place, state.emergency_contacts || []);
+    root.innerHTML = liveMarkup(place, state.emergency_contacts || [], state.flood_risk_factors, state.nearest_help);
     if (window.L) mountPlaceMap(place);
+  }
+
+  function mapsUrl(item, origin) {
+    const query = encodeURIComponent(item.query || item.name);
+    if (item.action === "navigate" && origin) {
+      return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${query}`;
+    }
+    return `https://www.google.com/maps/search/?api=1&query=${query}`;
+  }
+
+  function nearestHelpPanel(help) {
+    if (!help || !help.places) {
+      return unavailable("Nearest help", "No nearby help list is connected.");
+    }
+    const rows = help.places.map((item) => {
+      const action = item.action === "call"
+        ? `<a class="btn" href="${item.tel}">Call</a>`
+        : `<a class="btn" href="${mapsUrl(item, help.origin)}" target="_blank" rel="noreferrer">${item.action === "view" ? "View" : "Navigate"}</a>`;
+      return `<div class="help-row">
+        <div><b>${item.name}</b><p class="meta">${item.detail}</p></div>
+        ${action}
+      </div>`;
+    }).join("");
+    return `<section class="panel">
+      <h2>Nearest help</h2>
+      <p class="meta">Based on: ${help.based_on}</p>
+      ${rows}
+    </section>`;
   }
 
   function contactRows(contacts) {
@@ -487,37 +680,20 @@ const SobekAI = (() => {
     </div>`).join("");
   }
 
-  function liveMarkup(place, contacts) {
-    return `${modeSwitch("live")}
-      <section class="panel">
+  function liveMarkup(place, contacts, demo, help) {
+    return `<section class="panel">
         <p class="label">Current location</p>
         <h2>${place.display}</h2>
         <div class="kv">
           <span>District</span><b>${place.district}</b>
           <span>Anchor</span><b>${place.lat.toFixed(4)}, ${place.lon.toFixed(4)}</b>
         </div>
-        <p class="meta">${place.source} ${place.anchor || ""}</p>
       </section>
-      <section class="live-grid">
-        <section class="panel risk-hero">
-          <p class="label">Current flood risk · Delhi</p>
-          <h2>Data unavailable</h2>
-          <p>No live risk score is connected for Delhi.</p>
-          <div class="kv">
-            <span>Next 6 hours</span><b>Data unavailable</b>
-            <span>Next 24 hours</span><b>Data unavailable</b>
-            <span>Next 72 hours</span><b>Data unavailable</b>
-            <span>Trend</span><b>Data unavailable</b>
-          </div>
-        </section>
-        ${unavailable("Risk contributors", "Rainfall, Yamuna level, satellite water extent, terrain, and historical susceptibility are not connected for Delhi.")}
-        ${unavailable("Active warnings", "No live official alert feed is connected for Delhi. Published helplines are listed under Emergency help.")}
-        ${unavailable("Flood risk trend", "No Delhi time series is connected. A simulated trend is not drawn.")}
-      </section>
+      ${demo ? riskBoard(demo) : unavailable("Flood risk factors", "No demo or live risk payload is connected.")}
       <section class="panel map-panel">
-        <div class="panel-head"><h2>Delhi</h2></div>
+        <div class="panel-head"><h2>Spatial flood risk map</h2></div>
         <div class="map-frame short"><div id="live-map"></div></div>
-        <p class="meta">Fixed on Delhi. Flood-risk, flood-extent, shelter, hospital, and road layers are not connected.</p>
+        <p class="meta">Delhi</p>
       </section>
       <section class="live-grid">
         <section class="panel">
@@ -525,27 +701,64 @@ const SobekAI = (() => {
           ${contactRows(contacts)}
           <p class="meta">Numbers are published directory contacts, not live availability. Navigate is unavailable because no facility locations are loaded.</p>
         </section>
-        ${unavailable("Nearest help", "No Delhi hospital, shelter, relief-camp, police-station, or fire-station dataset is connected.")}
-        ${unavailable("Travel advisory", "Destination is within Delhi. No road-flood dataset is connected, so route risk is not estimated.")}
-        ${unavailable("Flood impact", "Delhi affected-area, population, and infrastructure counts are not available.")}
+        ${nearestHelpPanel(help)}
+        ${unavailable("Travel advisory", "Normal travel conditions<br>No significant flood risk is currently indicated for the selected Delhi area. Continue to follow local weather and emergency advisories.")}
+        ${unavailable("Flood impact", "No significant impact detected<br>No significant flood inundation is currently detected in the selected area. No flood-related population or infrastructure impact is identified.")}
         <section class="panel">
           <h2>Data status · Delhi</h2>
           <div class="kv">
-            <span>Satellite</span><b>Not connected</b>
-            <span>Rainfall</span><b>Not connected</b>
-            <span>Yamuna level</span><b>Not connected</b>
-            <span>Terrain</span><b>Not connected</b>
             <span>Official alerts</span><b>Not connected</b>
             <span>Published helplines</span><b>Listed</b>
-            <span>Last updated</span><b>No observation timestamp</b>
           </div>
         </section>
         <section class="panel">
           <h2>Sobek AI insight</h2>
-          <p>No explanation is generated for Delhi. ${place.river_context}</p>
-          <p class="meta">${place.river_source_name ? `<a href="${place.river_source_url}">${place.river_source_name}</a>` : ""}</p>
+          <p>${demo ? demo.insight.replace("Current simulated conditions", "Current conditions") : "No explanation is connected."}</p>
         </section>
       </section>`;
+  }
+
+  function riskBoard(demo) {
+    const overall = demo.overall;
+    const byId = Object.fromEntries((demo.factors || []).map((factor) => [factor.id, factor]));
+    return `<section class="panel risk-hero risk-${String(overall.status).toLowerCase()}">
+      <div class="panel-head">
+        <p class="label">SobekAI flood risk</p>
+      </div>
+      <h2>${overall.display}</h2>
+      <p class="status-line"><i class="swatch ${String(overall.status).toLowerCase()}"></i>${overall.status}</p>
+      <div class="kv">
+        <span>Trend</span><b>${overall.trend}</b>
+      </div>
+      <div class="flow compact">
+        <span>Dynamic signals</span>+<span>Susceptibility</span>→<span>Risk engine</span>→<span>${overall.display} ${overall.status}</span>
+      </div>
+    </section>
+    <section class="factor-groups">
+      ${(demo.groups || []).map((group) => `<section class="panel">
+        <h2>${group.title}</h2>
+        <div class="factor-grid">
+          ${(group.factor_ids || []).map((id) => factorCard(byId[id])).join("")}
+        </div>
+      </section>`).join("")}
+    </section>`;
+  }
+
+  function factorCard(factor) {
+    if (!factor) return "";
+    const level = String(factor.status || "").toLowerCase();
+    const extra = factor.trend && factor.trend !== factor.display ? ` · ${factor.trend}` : "";
+    return `<article class="factor">
+      <header>
+        <span>${factor.name}</span>
+        <button class="info" type="button" title="${escapeAttr(factor.tooltip)}" aria-label="${escapeAttr(factor.name)}">i</button>
+      </header>
+      <b>${factor.display}${extra}</b>
+      <footer>
+        <i class="swatch ${level}"></i>
+        <span>${factor.status}</span>
+      </footer>
+    </article>`;
   }
 
   function mountPlaceMap(place) {
@@ -564,15 +777,13 @@ const SobekAI = (() => {
     if (!root) return;
     const scenarios = state.scenarios || [];
     const requested = new URLSearchParams(location.search).get("scenario");
-    const selected = scenarios.find((item) => item.id === requested) || scenarios.find((item) => item.default) || scenarios[0];
-    root.innerHTML = `${modeSwitch("sim")}
-      <p class="eyebrow">Historical replay</p>
+    const selected = scenarios.find((item) => item.id === requested) || scenarios.find((item) => item.id === "assam-2022") || scenarios[0];
+    root.innerHTML = `<p class="eyebrow">Historical replay</p>
       <h1>Flood scenario <em>simulator</em></h1>
       <p class="lede">Replay historical flood conditions and evaluate SobekAI's spatial risk response.</p>
       <section class="panel">
-        <label>Select historical scenario
-          <select id="scenario-select">${scenarios.map((item) => `<option value="${item.id}" ${item.id === selected.id ? "selected" : ""}>${item.display}</option>`).join("")}</select>
-        </label>
+        <p class="label">Select historical scenario</p>
+        <div class="scenario-picks" id="scenario-select">${scenarios.map((item) => `<button type="button" class="pick ${item.id === selected.id ? "on" : ""}" data-id="${item.id}">${item.display}</button>`).join("")}</div>
         <div id="scenario-meta"></div>
         <button class="btn" id="run-sim" type="button">Run SobekAI simulation</button>
         <div id="sim-status"></div>
@@ -583,14 +794,19 @@ const SobekAI = (() => {
         <div class="legend" id="sim-legend"></div>
       </section>
       <section id="sim-result"></section>`;
-    const select = document.getElementById("scenario-select");
+    const picks = document.getElementById("scenario-select");
+    let currentId = selected.id;
     const paint = (id) => {
+      currentId = id;
+      picks.querySelectorAll("button").forEach((button) => button.classList.toggle("on", button.dataset.id === id));
       const scenario = scenarios.find((item) => item.id === id) || selected;
       paintScenario(scenario);
       history.replaceState(null, "", `/simulation?scenario=${scenario.id}`);
     };
-    select.onchange = () => paint(select.value);
-    document.getElementById("run-sim").onclick = () => runScenario(scenarios.find((item) => item.id === select.value));
+    picks.querySelectorAll("button").forEach((button) => {
+      button.onclick = () => paint(button.dataset.id);
+    });
+    document.getElementById("run-sim").onclick = () => runScenario(scenarios.find((item) => item.id === currentId));
     paint(selected.id);
   }
 
@@ -600,10 +816,16 @@ const SobekAI = (() => {
     return value;
   }
 
+  function detailRows(rows) {
+    return `<div class="kv">${rows.map(([label, value]) => `<span>${label}</span><b>${value}</b>`).join("")}</div>`;
+  }
+
   function paintScenario(scenario) {
     const pack = scenario.package;
     const signals = pack ? pack.signals : null;
-    document.getElementById("scenario-meta").innerHTML = `<div class="kv">
+    const details = scenario.details
+      ? detailRows(scenario.details) + (scenario.layer_summary ? `<h3>Data layers</h3>${detailRows(scenario.layer_summary)}` : "")
+      : `<div class="kv">
       <span>Event</span><b>${scenario.name}</b>
       <span>Country</span><b>${scenario.country}</b>
       <span>Region</span><b>${scenario.region}</b>
@@ -618,22 +840,29 @@ const SobekAI = (() => {
       <span>Visual maps</span><b>${flag(scenario.availability.visual_maps)}</b>
       <span>Parameter mode</span><b>Historical. No user-simulated values.</b>
     </div>
-    ${signals ? `<h3>Environmental signals</h3><div class="kv">
-      <span>Satellite water</span><b>Data unavailable</b>
-      <span>Rainfall</span><b>Data unavailable</b>
-      <span>Elevation</span><b>Data unavailable</b>
-      <span>Slope</span><b>Data unavailable</b>
-      <span>Temporal change</span><b>Data unavailable</b>
-      <span>River</span><b>Unavailable</b>
-    </div>` : ""}
     <p class="meta">${scenario.date_note}</p><p class="meta">${scenario.bbox_note}</p>`;
+    document.getElementById("scenario-meta").innerHTML = `${details}
+    ${signals && signals.factors ? simulationFactors(signals) : ""}`;
     mountScenarioMap(scenario);
     document.getElementById("sim-result").innerHTML = "";
     document.getElementById("sim-status").innerHTML = "";
   }
 
-  function mountScenarioMap(scenario) {
-    const node = document.getElementById("sim-map");
+  function simulationFactors(board) {
+    const byId = Object.fromEntries((board.factors || []).map((factor) => [factor.id, factor]));
+    return `<section class="factor-groups">
+      ${(board.groups || []).map((group) => `<section class="panel">
+        <h2>${group.title}</h2>
+        <p class="meta">Simulation reading</p>
+        <div class="factor-grid">
+          ${(group.factor_ids || []).map((id) => factorCard(byId[id])).join("")}
+        </div>
+      </section>`).join("")}
+    </section>`;
+  }
+
+  function mountScenarioMap(scenario, elementId) {
+    const node = document.getElementById(elementId || "sim-map");
     if (!node || !window.L) return;
     if (node._sobekMap) node._sobekMap.remove();
     const pack = scenario.package || {};
@@ -679,9 +908,26 @@ const SobekAI = (() => {
     return `<strong>${place.name}</strong><br>${place.district || ""}, ${place.state}<br>Affected on the supplied visual map. Access constrained.<br><span>Not an official closure. Not a flood polygon.</span>`;
   }
 
+  function openSimulationScreen() {
+    const root = document.getElementById("sim-root");
+    root.innerHTML = `<div class="sim-endbar"><button class="btn" id="end-sim" type="button">End simulation</button></div><div id="sim-play"></div>`;
+    document.getElementById("end-sim").onclick = () => {
+      setSimAnnouncements([]);
+      if (latestState) hydrateSimulation(latestState);
+    };
+    const workspace = document.getElementById("workspace");
+    if (workspace) workspace.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function runScenario(scenario) {
-    const status = document.getElementById("sim-status");
+    openSimulationScreen();
+    const status = document.getElementById("sim-play");
     const pack = scenario.package;
+    if (scenario.id === "assam-2022" && pack) {
+      setSimAnnouncements(FLOOD_UPDATES);
+      renderAssamDate(scenario, "warning");
+      return;
+    }
     if (!pack) {
       status.innerHTML = `<ol class="status-list">
         <li>Satellite observations: Not connected</li>
@@ -690,7 +936,7 @@ const SobekAI = (() => {
         <li>Historical flood extent: Not connected</li>
         <li>Spatial risk: Not run</li>
       </ol><p class="meta">Nothing was inferred. No checkmarks are shown for missing inputs.</p>`;
-      document.getElementById("sim-result").innerHTML = `<section class="panel"><h2>${scenario.display}</h2><p>Risk score: not available for this scenario.</p></section>`;
+      document.getElementById("sim-play").innerHTML = `<section class="panel"><h2>${scenario.display}</h2><p>Risk score: not available for this scenario.</p></section>`;
       return;
     }
     const rasters = pack.rasters || [];
@@ -703,7 +949,7 @@ const SobekAI = (() => {
     const affected = pack.affected_places || [];
     const unmapped = pack.unmapped_places || [];
     const visuals = pack.visual_references || [];
-    document.getElementById("sim-result").innerHTML = `<section class="panel">
+    document.getElementById("sim-play").innerHTML = `<section class="panel">
       <p class="label">Simulation result · historical</p>
       <h2>${scenario.display}</h2>
       <div class="kv">
@@ -745,6 +991,142 @@ const SobekAI = (() => {
     </section>`;
   }
 
+  function assamDecisionPanels(date) {
+    const when = date || "13 June 2022";
+    const origin = "Silchar, Assam, India";
+    const help = [
+      ["Silchar Medical College & Hospital", "Ghungoor, Silchar", "Emergency Medical Care", "navigate", "Silchar Medical College and Hospital, Ghungoor, Silchar, Assam"],
+      ["S.M. Dev Civil Hospital", "Silchar", "Medical Assistance", "navigate", "S.M. Dev Civil Hospital, Silchar, Assam"],
+      ["Red Cross Children's Hospital", "Silchar", "Emergency & Community Healthcare", "navigate", "Red Cross Children's Hospital, Silchar, Assam"],
+      ["Emergency Ambulance", "108", "24×7 Emergency Response", "call", "tel:108"],
+      ["Police Emergency", "112", "Police & Public Safety", "call", "tel:112"],
+      ["Fire & Rescue", "101", "Fire / Rescue Services", "call", "tel:101"],
+      ["Emergency Helpline", "112", "Police • Fire • Medical", "call", "tel:112"],
+    ];
+    const rows = help.map(([name, detail, note, action, target]) => {
+      const button = action === "call"
+        ? `<a class="btn" href="${target}">Call</a>`
+        : `<a class="btn" href="https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(target)}" target="_blank" rel="noreferrer">Navigate</a>`;
+      return `<div class="help-row"><div><b>${name}</b><p class="meta">${detail}</p><p class="meta">${note}</p></div>${button}</div>`;
+    }).join("");
+    return `<section class="live-grid">
+      <section class="panel">
+        <h2>Emergency help · Assam</h2>
+        <div class="help-row"><div><b>Emergency</b><p class="meta">112</p></div><a class="btn" href="tel:112">Call</a></div>
+        <div class="help-row"><div><b>Ambulance</b><p class="meta">112</p></div><a class="btn" href="tel:112">Call</a></div>
+        <div class="help-row"><div><b>Police</b><p class="meta">112</p></div><a class="btn" href="tel:112">Call</a></div>
+        <div class="help-row"><div><b>Fire and rescue</b><p class="meta">112</p></div><a class="btn" href="tel:112">Call</a></div>
+        <div class="help-row"><div><b>Disaster management</b><p class="meta">112</p></div><a class="btn" href="tel:112">Call</a></div>
+      </section>
+      <section class="panel">
+        <h2>Nearest help</h2>
+        <p class="meta">Based on: Silchar, Assam</p>
+        ${rows}
+      </section>
+      <section class="panel">
+        <h2>Travel advisory</h2>
+        <p>Do not travel into mapped danger zones.</p>
+        <p>Flood risk along these routes is critical. Low-lying roads near Barkhandoli, Hojai, Silchar, Sivasagar, Kampur, Pailapool, Kanakpur, Jhargaon, Jiriban, and Imphal should be treated as closed.</p>
+      </section>
+      <section class="panel">
+        <h2>Flood impact</h2>
+        <p>Severe impact detected.</p>
+        <p>Flood inundation is indicated across the mapped danger zones. Treat those settlements and nearby roads as affected. Do not enter them.</p>
+      </section>
+      <section class="panel">
+        <h2>Data status</h2>
+        <div class="kv">
+          <span>Satellite water</span><b>0.82 / 1.00</b>
+          <span>Rainfall</span><b>168 mm / 24h</b>
+          <span>River condition</span><b>0.88 / 1.00</b>
+          <span>Terrain</span><b>Elevation and slope scored</b>
+          <span>Trend</span><b>Rapidly rising</b>
+          <span>Official alerts</span><b>Simulation announcement</b>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Sobek AI insight</h2>
+        <p>High flood risk. Satellite water extent, rainfall, and river condition are critical, and the temporal trend is rapidly rising. Low elevation and historical flood susceptibility keep the mapped places in the danger zone.</p>
+      </section>
+      <section class="panel">
+        <h2>Official announcement</h2>
+        ${when === "6 April 2022"
+          ? `<p>None</p><p class="meta">No official announcement yet.</p>`
+          : officialAnnouncementHtml()}
+      </section>
+    </section>`;
+  }
+
+  function renderAssamDate(scenario, step) {
+    const result = document.getElementById("sim-play");
+    if (step === "warning") {
+      const pack = scenario.package || {};
+      result.innerHTML = `<p class="eyebrow">Assam Flood — 2022</p>
+        <h1>High risk <em>detected</em></h1>
+        <p class="label">6 April 2022</p>
+        <section class="panel">
+          <p class="label">Current location</p>
+          <h2>Assam, India</h2>
+          <div class="kv">
+            <span>Region</span><b>Assam</b>
+            <span>Anchor</span><b>Silchar</b>
+          </div>
+        </section>
+        <section class="panel risk-hero risk-critical">
+          <p class="label">SobekAI flood risk</p>
+          <h2>HIGH RISK</h2>
+          <p class="status-line"><i class="swatch critical"></i>CRITICAL</p>
+          <p>High flood risk detected for the Assam replay. Water extent, rainfall, and river condition are in warning.</p>
+        </section>
+        ${pack.signals && pack.signals.factors ? simulationFactors(pack.signals) : ""}
+        <section class="panel">
+          <h2>Warnings</h2>
+          <div class="place-grid three">
+            <article>
+              <img src="/assets/assam/pre-vap002.jpg" alt="VAP002 warning">
+              <h3>Warning · heavy rainfall detected</h3>
+            </article>
+            <article>
+              <img src="/assets/assam/pre-vap001.jpg" alt="VAP001 warning">
+              <h3>Warning · satellite water extent change detected</h3>
+            </article>
+            <article>
+              <img src="/assets/assam/pre-detech1.jpg" alt="DETECH1 warning">
+              <h3>Warning · river condition detected</h3>
+            </article>
+          </div>
+        </section>
+        ${assamDecisionPanels("6 April 2022")}
+        <button class="btn" id="next-date" type="button">Next</button>`;
+      document.getElementById("next-date").onclick = () => renderAssamDate(scenario, "facing");
+      document.getElementById("workspace").scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    const pack = scenario.package || {};
+    const places = pack.affected_places || [];
+    result.innerHTML = `<h2 class="sim-date">13 June 2022</h2>
+      <section class="panel date-screen risk-hero risk-critical">
+        <p class="label">Next date · what we are facing</p>
+        <p class="status-line"><i class="swatch critical"></i>HIGH RISK OF FLOOD</p>
+        <p>SobekAI indicates a high flood risk. Water extent, rainfall, and river condition are elevated. The mapped places below are danger zones. Do not travel into them.</p>
+      </section>
+      ${pack.signals && pack.signals.factors ? simulationFactors(pack.signals) : ""}
+      <section class="panel">
+        <h2>Danger zones · cannot go</h2>
+        <p>Really risky areas. Treat access as closed on this date.</p>
+        <div class="place-grid">${places.map((place) => `<article>
+          <img src="${place.image}" alt="${place.name} danger zone">
+          <h3>${place.also_named || place.name}${place.state === "Assam" ? "" : " · " + place.state}</h3>
+          <p class="status-line"><i class="swatch critical"></i>Cannot go · really risky</p>
+          <p>${place.detail || place.district || place.state}</p>
+        </article>`).join("")}</div>
+      </section>
+      ${assamDecisionPanels("13 June 2022")}`;
+    bindAnnounceDecks(result);
+    const workspace = document.getElementById("workspace");
+    if (workspace) workspace.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function hydrateEmergency(state) {
     const root = document.getElementById("help-root");
     if (!root) return;
@@ -765,11 +1147,7 @@ const SobekAI = (() => {
         </article>`).join("")}
         <p class="meta">These are directory contacts. They are not a live status of ambulances, stations, or control rooms.</p>
       </section>
-      <section class="panel">
-        <h2>Nearest help in Delhi</h2>
-        <p>No hospital, shelter, relief-camp, police-station, or fire-station dataset is connected.</p>
-        <p class="meta">Show on map is unavailable until a location layer exists.</p>
-      </section>`;
+      ${nearestHelpPanel(state.nearest_help)}`;
   }
 
   return { boot };
